@@ -1,6 +1,18 @@
 #include "GP_Template.h"
+constexpr bool grid[10][10] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+								{1, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+								{1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
+								{1, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+								{1, 0, 1, 1, 0, 0, 0, 1, 0, 1},
+								{1, 0, 1, 0, 0, 0, 0, 1, 1, 1},
+								{1, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+								{1, 0, 1, 1, 1, 0, 0, 0, 0, 1},
+								{1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
+								{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}}; //create blocks on 1s, empty space on zeros
 
-
+constexpr int ROWS = 10;
+constexpr int COLS = 10;
+std::vector<Cube> walls;
 
 int main()
 {
@@ -54,28 +66,24 @@ void startup() {
 	myGraphics.proj_matrix = glm::perspective(glm::radians(50.0f), myGraphics.aspect, 0.1f, 1000.0f);
 
 	// Load Geometry examples
-	myCube.Load();
-
-	mySphere.Load();
-	mySphere.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);    // You can change the shape fill colour, line colour or linewidth
-
-	arrowX.Load(); arrowY.Load(); arrowZ.Load();
-	arrowX.fillColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f); arrowX.lineColor = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-	arrowY.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f); arrowY.lineColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	arrowZ.fillColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f); arrowZ.lineColor = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-
 	myFloor.Load();
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
-	myCylinder.Load();
-	myCylinder.fillColor = glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
-	myCylinder.lineColor = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-
-	myLine.Load();
-	myLine.fillColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
-	myLine.lineColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
-	myLine.lineWidth = 5.0f;
+	//createMaze
+	for (int i = 0; i < ROWS; i++)
+	{
+		for (int j = 0; j < COLS; j++)
+		{
+			const bool create_wall = grid[i][j];
+			if (create_wall)
+			{
+				Cube wall;
+				wall.Load();
+				walls.push_back(wall);
+			}
+		}
+	}
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
@@ -134,71 +142,38 @@ void updateSceneElements() {
 	deltaTime = currentTime - lastTime;                // Calculate delta time
 	lastTime = currentTime;                            // Save for next frame calculations.
 
-	// Do not forget your ( T * R * S ) http://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/
+	//createMaze
+	int k = 0;
+	for (int i = 0; i < ROWS; i++)
+	{
+		for (int j = 0; j < COLS; j++)
+		{
+			const bool wall_exists = grid[i][j];
+			if (wall_exists)
+			{
+				Cube& wall = walls[k];
+				// Calculate Cube position
+				const auto cube_size = 1.0f;
+				const auto x_pos = i * cube_size;
+				const auto y_pos = 0.5f;
+				const auto z_pos = j * cube_size;
 
-	// Calculate Cube position
-	glm::mat4 mv_matrix_cube =
-		glm::translate(glm::vec3(2.0f, 0.5f, 0.0f)) *
-		glm::mat4(1.0f);
-	myCube.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
-	myCube.proj_matrix = myGraphics.proj_matrix;
-
-	// calculate Sphere movement
-	glm::mat4 mv_matrix_sphere =
-		glm::translate(glm::vec3(-2.0f, 0.5f, 0.0f)) *
-		glm::rotate(-t, glm::vec3(0.0f, 1.0f, 0.0f)) *
-		glm::rotate(-t, glm::vec3(1.0f, 0.0f, 0.0f)) *
-		glm::mat4(1.0f);
-	mySphere.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
-	mySphere.proj_matrix = myGraphics.proj_matrix;
-
-	//Calculate Arrows translations (note: arrow model points up)
-	glm::mat4 mv_matrix_x =
-		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
-		glm::rotate(glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *
-		glm::scale(glm::vec3(0.2f, 0.5f, 0.2f)) *
-		glm::mat4(1.0f);
-	arrowX.mv_matrix = myGraphics.viewMatrix * mv_matrix_x;
-	arrowX.proj_matrix = myGraphics.proj_matrix;
-
-	glm::mat4 mv_matrix_y =
-		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
-		//glm::rotate(glm::radians(-90.0f), glm::vec3(0.0f, 0.0f, 1.0f)) *    // already model pointing up
-		glm::scale(glm::vec3(0.2f, 0.5f, 0.2f)) *
-		glm::mat4(1.0f);
-	arrowY.mv_matrix = myGraphics.viewMatrix * mv_matrix_y;
-	arrowY.proj_matrix = myGraphics.proj_matrix;
-
-	glm::mat4 mv_matrix_z =
-		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
-		glm::rotate(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) *
-		glm::scale(glm::vec3(0.2f, 0.5f, 0.2f)) *
-		glm::mat4(1.0f);
-	arrowZ.mv_matrix = myGraphics.viewMatrix * mv_matrix_z;
-	arrowZ.proj_matrix = myGraphics.proj_matrix;
-
+				glm::mat4 mv_matrix_cube =
+					glm::translate(glm::vec3(x_pos, y_pos, z_pos)) *
+					glm::mat4(1.0f);
+				wall.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
+				wall.proj_matrix = myGraphics.proj_matrix;
+				k += 1;
+			}
+		}
+	}
+		
 	// Calculate floor position and resize
 	myFloor.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
 		glm::scale(glm::vec3(1000.0f, 0.001f, 1000.0f)) *
 		glm::mat4(1.0f);
 	myFloor.proj_matrix = myGraphics.proj_matrix;
-
-	// Calculate cylinder
-	myCylinder.mv_matrix = myGraphics.viewMatrix *
-		glm::translate(glm::vec3(-1.0f, 0.5f, 2.0f)) *
-		glm::mat4(1.0f);
-	myCylinder.proj_matrix = myGraphics.proj_matrix;
-
-	// Calculate Line
-	myLine.mv_matrix = myGraphics.viewMatrix *
-		glm::translate(glm::vec3(1.0f, 0.5f, 2.0f)) *
-		glm::mat4(1.0f);
-	myLine.proj_matrix = myGraphics.proj_matrix;
-
-
-	t += 0.01f; // increment movement variable
-
 
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 
@@ -207,18 +182,12 @@ void updateSceneElements() {
 void renderScene() {
 	// Clear viewport - start a new frame.
 	myGraphics.ClearViewport();
-
-	// Draw objects in screen
 	myFloor.Draw();
-	myCube.Draw();
-	mySphere.Draw();
-
-	arrowX.Draw();
-	arrowY.Draw();
-	arrowZ.Draw();
-
-	myLine.Draw();
-	myCylinder.Draw();
+	// Draw objects in screen
+	for (auto& wall : walls)
+	{
+		wall.Draw();
+	}
 }
 
 // CallBack functions low level functionality.
