@@ -25,7 +25,7 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-		updateCamera();
+		//updateCamera();
 
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
@@ -65,6 +65,15 @@ void startup() {
 	myGraphics.aspect = (float)myGraphics.windowWidth / (float)myGraphics.windowHeight;
 	myGraphics.proj_matrix = glm::perspective(glm::radians(50.0f), myGraphics.aspect, 0.1f, 1000.0f);
 
+	//camera
+	myGraphics.cameraPitch = -72.0f;
+	myGraphics.cameraYaw = -89.0f;
+	myGraphics.cameraPosition = glm::vec3(4.32f, 12.74f, 0.66f);
+	myGraphics.cameraFront = glm::vec3(0.000462104f, -0.964326f, 0.264716f);
+	myGraphics.cameraUp = glm::vec3(0, 1, 0);
+	myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
+		myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
+		myGraphics.cameraUp);												// up
 	// Load Geometry examples
 	myFloor.Load();
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
@@ -88,49 +97,6 @@ void startup() {
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
-}
-
-void updateCamera() {
-
-	// calculate movement for FPS camera
-	GLfloat xoffset = myGraphics.mouseX - myGraphics.cameraLastX;
-	GLfloat yoffset = myGraphics.cameraLastY - myGraphics.mouseY;    // Reversed mouse movement
-	myGraphics.cameraLastX = (GLfloat)myGraphics.mouseX;
-	myGraphics.cameraLastY = (GLfloat)myGraphics.mouseY;
-
-	GLfloat sensitivity = 0.05f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
-
-	myGraphics.cameraYaw += xoffset;
-	myGraphics.cameraPitch += yoffset;
-
-	// check for pitch out of bounds otherwise screen gets flipped
-	if (myGraphics.cameraPitch > 89.0f) myGraphics.cameraPitch = 89.0f;
-	if (myGraphics.cameraPitch < -89.0f) myGraphics.cameraPitch = -89.0f;
-
-	// Calculating FPS camera movement (See 'Additional Reading: Yaw and Pitch to Vector Calculations' in VISION)
-	glm::vec3 front;
-	front.x = cos(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
-	front.y = sin(glm::radians(myGraphics.cameraPitch));
-	front.z = sin(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
-
-	myGraphics.cameraFront = glm::normalize(front);
-
-	// Update movement using the keys
-	GLfloat cameraSpeed = 1.0f * deltaTime;
-	if (keyStatus[GLFW_KEY_W]) myGraphics.cameraPosition += cameraSpeed * myGraphics.cameraFront;
-	if (keyStatus[GLFW_KEY_S]) myGraphics.cameraPosition -= cameraSpeed * myGraphics.cameraFront;
-	if (keyStatus[GLFW_KEY_A]) myGraphics.cameraPosition -= glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
-	if (keyStatus[GLFW_KEY_D]) myGraphics.cameraPosition += glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
-
-	// IMPORTANT PART
-	// Calculate my view matrix using the lookAt helper function
-	if (mouseEnabled) {
-		myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
-			myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
-			myGraphics.cameraUp);												// up
-	}
 }
 
 void updateSceneElements() {
