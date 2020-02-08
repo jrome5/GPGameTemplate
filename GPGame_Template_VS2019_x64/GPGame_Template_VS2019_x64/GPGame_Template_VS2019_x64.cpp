@@ -27,12 +27,9 @@ struct character
 	GLfloat yaw = 0.0f;
 } myCharacter;
 
-constexpr Vector3 gravity = { 0.0f, -9.81f, 0.0f };
+BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
 
-BoundingBox b({ 0.0f, 3.0f, 0.0f }, 5);
-
-int mainfunction(); //delete
-int mainfunction()
+int main()
 {
 	int errorGraphics = myGraphics.Init();			// Launch window and graphics context
 	if (errorGraphics) return 0;					// Close if something went wrong...
@@ -180,19 +177,19 @@ void updateSceneElements() {
 
 void update(const float current_time)
 {
-	if (b.particle.position.y > b.scale.y)
+	if (b.position.y > b.scale.y)
 	{
 		const float dt = current_time - previous_time;
 		previous_time = current_time;
-		const auto force = b.getForce(gravity);
-		const auto acceleration = b.getAcceleration(force);
-		b.getVelocity(acceleration, dt);
-		b.getPosition(b.particle.velocity, dt);
+		const auto force = b.calculateForce(gravity);
+		const auto acceleration = b.calculateAcceleration(force);
+		b.calculateVelocity(acceleration, dt);
+		b.calculatePosition(b.velocity, dt);
 	}
 
 	//check if bounding box visuals
 	glm::mat4 mv_matrix_cube =
-		glm::translate(glm::vec3(b.particle.position.x, b.particle.position.y, b.particle.position.z)) *
+		glm::translate(glm::vec3(b.position.x, b.position.y, b.position.z)) *
 		glm::mat4(1.0f);
 	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 	b.visual.proj_matrix = myGraphics.proj_matrix;
