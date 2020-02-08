@@ -1,4 +1,6 @@
 #include "GP_Template.h"
+#include "bounding_box.h"
+
 constexpr bool grid[10][10] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 								{1, 0, 1, 0, 0, 0, 0, 0, 0, 1},
 								{1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
@@ -25,7 +27,12 @@ struct character
 	GLfloat yaw = 0.0f;
 } myCharacter;
 
-int main()
+constexpr Vector3 gravity = { 0.0f, -9.81f, 0.0f };
+
+BoundingBox b({ 0.0f, 3.0f, 0.0f }, 5);
+
+int mainfunction(); //delete
+int mainfunction()
 {
 	int errorGraphics = myGraphics.Init();			// Launch window and graphics context
 	if (errorGraphics) return 0;					// Close if something went wrong...
@@ -36,8 +43,8 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-		//updateCamera();
-
+		const float current_time = float(glfwGetTime());
+		update(current_time);
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
 
@@ -109,6 +116,8 @@ void startup() {
 	myCharacter.shape.Load();
 	myCharacter.shape.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
 
+	//BoundingBox
+	b.visual.Load();
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
@@ -169,6 +178,26 @@ void updateSceneElements() {
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 }
 
+void update(const float current_time)
+{
+	if (b.particle.position.y > b.scale.y)
+	{
+		const float dt = current_time - previous_time;
+		previous_time = current_time;
+		const auto force = b.getForce(gravity);
+		const auto acceleration = b.getAcceleration(force);
+		b.getVelocity(acceleration, dt);
+		b.getPosition(b.particle.velocity, dt);
+	}
+
+	//check if bounding box visuals
+	glm::mat4 mv_matrix_cube =
+		glm::translate(glm::vec3(b.particle.position.x, b.particle.position.y, b.particle.position.z)) *
+		glm::mat4(1.0f);
+	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
+	b.visual.proj_matrix = myGraphics.proj_matrix;
+}
+
 void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
 {
 	//calculate displacements
@@ -209,6 +238,7 @@ void renderScene() {
 		wall.Draw();
 	}
 	myCharacter.shape.Draw();
+	b.visual.Draw();
 }
 
 // CallBack functions low level functionality.
