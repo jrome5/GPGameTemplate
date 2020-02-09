@@ -28,6 +28,10 @@ struct character
 } myCharacter;
 
 BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
+Cube emitter_visual;
+Cube billboard;
+Emitter emitter(Vector3{ 5.0f, 1.0f, 5.0f });
+std::vector<Sphere> particle_visuals;
 
 int main()
 {
@@ -40,11 +44,12 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-		const float current_time = float(glfwGetTime());
-		update(current_time);
+	
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
 
+		const float current_time = float(glfwGetTime());
+		update(current_time);
 		// Render a still frame into an off-screen frame buffer known as the backbuffer.
 		renderScene();
 
@@ -115,6 +120,19 @@ void startup() {
 
 	//BoundingBox
 	b.visual.Load();
+
+	emitter_visual.Load();
+	emitter_visual.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f);
+	for (int i = 0; i < emitter.number_of_particles; i++)
+	{
+		Sphere s;
+		s.Load();
+		particle_visuals.push_back(s);
+	}
+
+	billboard.Load();
+	billboard.fillColor = glm::vec4(0.5f, 0.5f, 0.75f, 1.0f);
+
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
@@ -154,6 +172,12 @@ void updateSceneElements() {
 			}
 		}
 	}
+	emitter_visual.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(emitter.position.x, emitter.position.y, emitter.position.z)) *
+		glm::scale(glm::vec3(1.0f,1.0f, 1.0f)) *
+		glm::mat4(1.0f);
+	emitter_visual.proj_matrix = myGraphics.proj_matrix;
+
 		
 	// Calculate floor position and resize
 	myFloor.mv_matrix = myGraphics.viewMatrix *
@@ -177,15 +201,20 @@ void updateSceneElements() {
 
 void update(const float current_time)
 {
+	const float dt = current_time - previous_time;
+	previous_time = current_time;
+
+	bool jump = false;
+	Vector3 force;
+
 	if (b.position.y > b.scale.y)
 	{
-		const float dt = current_time - previous_time;
-		previous_time = current_time;
-		const auto force = b.calculateForce(gravity);
+		force += b.calculateForce(gravity);
 		const auto acceleration = b.calculateAcceleration(force);
 		b.calculateVelocity(acceleration, dt);
 		b.calculatePosition(b.velocity, dt);
 	}
+
 
 	//check if bounding box visuals
 	glm::mat4 mv_matrix_cube =
@@ -193,6 +222,41 @@ void update(const float current_time)
 		glm::mat4(1.0f);
 	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 	b.visual.proj_matrix = myGraphics.proj_matrix;
+
+
+	glm::mat4 mv_matrix_bill =
+		glm::translate(glm::vec3(6.0f, 1.0f, 1.0f)) *
+		glm::rotate(myGraphics.cameraPitch, glm::vec3(0.0f, 1.0f, 0.0f))*
+		glm::rotate(myGraphics.cameraYaw, glm::vec3(0.0f, 0.0f, 1.0f))*
+		glm::mat4(1.0f);
+	billboard.mv_matrix = myGraphics.viewMatrix * mv_matrix_bill;
+	billboard.proj_matrix = myGraphics.proj_matrix;
+
+	const float magnitude = 1.0f;
+	for (int i = 0; i < emitter.number_of_particles; i++)
+	{
+		Particle& particle = emitter.particles[i];
+
+		if (not particle.checkExpired(dt))
+		{
+			Vector3 accel;
+			accel.x = physics::getRandomFloat(magnitude, -magnitude/2);
+			accel.y = physics::getRandomFloat(0.5f, 0);
+			accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
+
+			particle.calculateVelocity(accel, dt);
+			particle.calculatePosition(particle.velocity, dt);
+		}
+
+		Sphere& visual = particle_visuals[i];
+
+		glm::mat4 mv_matrix_sphere =
+			glm::translate(glm::vec3(particle.position.x, particle.position.y, particle.position.z)) *
+			glm::scale(glm::vec3(0.1f,0.1f,0.1f))*
+			glm::mat4(1.0f);
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
+		visual.proj_matrix = myGraphics.proj_matrix;
+	}
 }
 
 void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
@@ -236,6 +300,13 @@ void renderScene() {
 	}
 	myCharacter.shape.Draw();
 	b.visual.Draw();
+	emitter_visual.Draw();
+	billboard.Draw();
+
+	for (auto& p : particle_visuals)
+	{
+		p.Draw();
+	}
 }
 
 // CallBack functions low level functionality.

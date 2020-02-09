@@ -12,10 +12,22 @@ void operator+=(Vector3& v1, Vector3& v2)
 	v1.z += v2.z;
 }
 
+void operator+=(Vector3& v1, const Vector3& v2)
+{
+	v1.x += v2.x;
+	v1.y += v2.y;
+	v1.z += v2.z;
+}
+
 constexpr Vector3 gravity = { 0.0f, -9.81f, 0.0f };
 
 namespace physics
 {
+	float getRandomFloat(const float upper, const float offset = 0)
+	{
+		return static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / upper)) + offset;
+	}
+
 	Vector3 calculateForce(const Vector3& acceleration, const float mass)
 	{
 		Vector3 force;
