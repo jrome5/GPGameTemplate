@@ -1,13 +1,30 @@
 #include "GP_Template.h"
 
-constexpr bool grid[5][5] = { {1, 1, 1, 1, 1},
-							{1, 0, 0, 0, 1},
-							{1, 0, 1, 0, 1},
-							{1, 0, 0, 0, 1},
-							{1, 1, 1, 1, 1} }; //create blocks on 1s, empty space on zeros
+constexpr bool grid[10][10] = { {0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+								{0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
+								{1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
+								{1, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+								{1, 0, 1, 1, 0, 0, 0, 1, 0, 1},
+								{1, 0, 1, 0, 0, 0, 0, 1, 1, 1},
+								{1, 0, 1, 0, 0, 1, 0, 0, 0, 1},
+								{1, 0, 1, 1, 1, 0, 0, 0, 0, 0},
+								{1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+								{1, 1, 1, 1, 1, 1, 1, 1, 0, 1} }; //create blocks on 1s, empty space on zeros
 
-constexpr int ROWS = 5;
-constexpr int COLS = 5;
+constexpr int ROWS = 10;
+constexpr int COLS = 10;
+
+struct character
+{
+	Sphere shape;
+	GLfloat pos_x = 0.0f;
+	GLfloat pos_y = 0.5f;
+	GLfloat pos_z = 0.0f;
+	GLfloat roll = 0.0f;
+	GLfloat pitch = 0.0f;
+	GLfloat yaw = 0.0f;
+
+} myCharacter;
 std::vector<Cube> walls;
 
 int main()
@@ -80,6 +97,9 @@ void startup() {
 			}
 		}
 	}
+	//character
+	myCharacter.shape.Load();
+	myCharacter.shape.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
@@ -171,8 +191,50 @@ void updateSceneElements() {
 		glm::mat4(1.0f);
 	myFloor.proj_matrix = myGraphics.proj_matrix;
 
+	GLfloat x = 0.0f;
+	GLfloat z = 0.0f;
+	GLfloat speed = 0.01f;
+
+	if (keyStatus[GLFW_KEY_UP]) z += speed;
+	if (keyStatus[GLFW_KEY_DOWN]) z -= speed;
+	if (keyStatus[GLFW_KEY_LEFT]) x += speed;
+	if (keyStatus[GLFW_KEY_RIGHT]) x -= speed;
+	moveCharacter(x, 0.0f, z);
+
+
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 
+}
+
+void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
+{
+	//calculate displacements
+	GLfloat new_x = myCharacter.pos_x + x;
+	GLfloat new_y = myCharacter.pos_y + y;
+	GLfloat new_z = myCharacter.pos_z + z;
+
+	GLfloat new_roll = myCharacter.roll + z;
+	GLfloat new_pitch = myCharacter.pitch + x;
+	GLfloat new_yaw = myCharacter.yaw + y;
+	{
+		//update Character
+		myCharacter.pos_x = new_x;
+		myCharacter.pos_y = new_y;
+		myCharacter.pos_z = new_z;
+		myCharacter.roll = new_roll;
+		myCharacter.pitch = new_pitch;
+		myCharacter.yaw = new_yaw;
+	}
+
+	//translate and rotate accordingly
+	glm::mat4 mv_matrix_character =
+		glm::translate(glm::vec3(new_x, new_y, new_z)) *
+		glm::rotate(new_roll, glm::vec3(1.0f, 0.0f, 0.0f)) *
+		glm::rotate(new_pitch, glm::vec3(0.0f, 0.0f, -1.0f)) *
+		glm::rotate(new_yaw, glm::vec3(0.0f, 1.0f, 0.0f)) *
+		glm::mat4(1.0f);
+	myCharacter.shape.mv_matrix = myGraphics.viewMatrix * mv_matrix_character;
+	myCharacter.shape.proj_matrix = myGraphics.proj_matrix;
 }
 
 void renderScene() {
@@ -184,6 +246,7 @@ void renderScene() {
 	{
 		wall.Draw();
 	}
+	myCharacter.shape.Draw();
 }
 
 // CallBack functions low level functionality.
