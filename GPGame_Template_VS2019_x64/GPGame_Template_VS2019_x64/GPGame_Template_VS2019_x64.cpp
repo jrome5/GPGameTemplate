@@ -1,4 +1,5 @@
 #include "GP_Template.h"
+#include "AABB.h"
 
 constexpr bool grid[10][10] = { {0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
 								{0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
@@ -25,6 +26,9 @@ struct character
 	GLfloat yaw = 0.0f;
 
 } myCharacter;
+
+AABB character_aabb;
+std::vector<AABB> wall_aabbs;
 std::vector<Cube> walls;
 
 int main()
@@ -94,12 +98,19 @@ void startup() {
 				Cube wall;
 				wall.Load();
 				walls.push_back(wall);
+				AABB aabb;
+				aabb.c = Point(-500.0f, -500.0f, -500.0f);
+				aabb.r = Point(0.5f, 0.5f, .5f);
+				wall_aabbs.push_back(aabb);
 			}
 		}
 	}
 	//character
 	myCharacter.shape.Load();
 	myCharacter.shape.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	character_aabb.r = Point(myCharacter.pos_x, myCharacter.pos_y, myCharacter.pos_z);
+	character_aabb.r = Point(0.4, 0.5f, 0.4f);
+
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
@@ -179,6 +190,7 @@ void updateSceneElements() {
 					glm::mat4(1.0f);
 				wall.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 				wall.proj_matrix = myGraphics.proj_matrix;
+				wall_aabbs[k].c = Point(x_pos, y_pos, z_pos);
 				k += 1;
 			}
 		}
@@ -216,6 +228,30 @@ void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
 	GLfloat new_roll = myCharacter.roll + z;
 	GLfloat new_pitch = myCharacter.pitch + x;
 	GLfloat new_yaw = myCharacter.yaw + y;
+
+	character_aabb.c = Point(new_x, new_y, new_z);
+
+	bool collision = false;
+	for (int i = 0; i < wall_aabbs.size(); i++)
+	{
+		if (isCollision(character_aabb, wall_aabbs[i]))
+		{
+			collision = true;
+			break;
+		}
+	}
+	if (collision)
+	{
+		new_x = myCharacter.pos_x;
+		new_y = myCharacter.pos_y;
+		new_z = myCharacter.pos_z;
+
+		new_roll = myCharacter.roll;
+		new_pitch = myCharacter.pitch;
+		new_yaw = myCharacter.yaw;
+		character_aabb.c = Point(new_x, new_y, new_z);
+	}
+	else
 	{
 		//update Character
 		myCharacter.pos_x = new_x;
