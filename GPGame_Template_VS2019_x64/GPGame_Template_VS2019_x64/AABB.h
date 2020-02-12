@@ -1,10 +1,13 @@
 #pragma once
 #include <cmath>
 #include <cassert>
+#include <algorithm>
+
 
 typedef struct Point
 {
     Point() {}
+    Point(double r) : x(r), y(r), z(r) {}
     Point(double x, double y, double z) : x(x), y(y), z(z)
     {}
     double x = 0.0;
@@ -39,7 +42,7 @@ double Abs(double a)
     return std::fabs(a);
 }
 
-bool isCollision(const AABB a, const AABB b)
+bool isCollisionCube(const AABB a, const AABB b)
 {
     bool xOverlap = true;
     bool yOverlap = true;
@@ -60,4 +63,22 @@ bool isCollision(const AABB a, const AABB b)
             cout << a.c[i] << " " << b.c[i] << "\n" << a.r[i] << " " << b.r[i] << "\n";
         }
     return anyOverlap;
-};
+}
+
+bool isPointInsideSphere(const Point point, const AABB sphere) {
+    auto distance_sqr = (point.x - sphere.c.x) * (point.x - sphere.c.x) +
+        (point.y - sphere.c.y) * (point.y - sphere.c.y) +
+        (point.z - sphere.c.z) * (point.z - sphere.c.z);
+    return distance_sqr < pow(sphere.r.x, 2);
+}
+
+bool isCollisionSphere(const AABB sphere, const AABB cube)
+{
+    bool anyOverlap = false;
+    Point p;
+    p.x = std::max(cube.c.x - cube.r.x, std::min(sphere.c.x, cube.c.x + cube.r.x));
+    p.y = std::max(cube.c.y - cube.r.y, std::min(sphere.c.y, cube.c.y + cube.r.y));
+    p.z = std::max(cube.c.z - cube.r.z, std::min(sphere.c.z, cube.c.z + cube.r.z));
+    anyOverlap = isPointInsideSphere(p, sphere);
+    return anyOverlap;
+}
