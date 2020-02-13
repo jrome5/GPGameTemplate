@@ -1,37 +1,8 @@
 #include "GP_Template.h"
 #include "bounding_box.h"
 
-constexpr bool grid[10][10] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-								{1, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-								{1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
-								{1, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-								{1, 0, 1, 1, 0, 0, 0, 1, 0, 1},
-								{1, 0, 1, 0, 0, 0, 0, 1, 1, 1},
-								{1, 0, 1, 0, 0, 1, 0, 0, 0, 1},
-								{1, 0, 1, 1, 1, 0, 0, 0, 0, 1},
-								{1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
-								{1, 1, 1, 1, 1, 1, 1, 1, 1, 1}}; //create blocks on 1s, empty space on zeros
-
-constexpr int ROWS = 10;
-constexpr int COLS = 10;
-std::vector<Cube> walls;
-
-struct character
-{
-	Sphere shape;
-	GLfloat pos_x = 0.0f;
-	GLfloat pos_y = 1.5f;
-	GLfloat pos_z = 0.0f;
-	GLfloat roll = 0.0f;
-	GLfloat pitch = 0.0f;
-	GLfloat yaw = 0.0f;
-} myCharacter;
 
 BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
-Cube emitter_visual;
-Cube billboard;
-Emitter emitter(Vector3{ 5.0f, 1.0f, 5.0f });
-std::vector<Sphere> particle_visuals;
 
 int main()
 {
@@ -99,39 +70,8 @@ void startup() {
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
-	//createMaze
-	for (int i = 0; i < ROWS; i++)
-	{
-		for (int j = 0; j < COLS; j++)
-		{
-			const bool create_wall = grid[i][j];
-			if (create_wall)
-			{
-				Cube wall;
-				wall.Load();
-				walls.push_back(wall);
-			}
-		}
-	}
-
-	//character
-	myCharacter.shape.Load();
-	myCharacter.shape.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-
 	//BoundingBox
 	b.visual.Load();
-
-	emitter_visual.Load();
-	emitter_visual.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f);
-	for (int i = 0; i < emitter.number_of_particles; i++)
-	{
-		Sphere s;
-		s.Load();
-		particle_visuals.push_back(s);
-	}
-
-	billboard.Load();
-	billboard.fillColor = glm::vec4(0.5f, 0.5f, 0.75f, 1.0f);
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
@@ -146,38 +86,6 @@ void updateSceneElements() {
 	GLfloat currentTime = (GLfloat)glfwGetTime();    // retrieve timelapse
 	deltaTime = currentTime - lastTime;                // Calculate delta time
 	lastTime = currentTime;                            // Save for next frame calculations.
-
-	//createMaze
-	int k = 0;
-	for (int i = 0; i < ROWS; i++)
-	{
-		for (int j = 0; j < COLS; j++)
-		{
-			const bool wall_exists = grid[i][j];
-			if (wall_exists)
-			{
-				Cube& wall = walls[k];
-				// Calculate Cube position
-				const auto cube_size = 1.0f;
-				const auto x_pos = i * cube_size;
-				const auto y_pos = 0.5f;
-				const auto z_pos = j * cube_size;
-
-				glm::mat4 mv_matrix_cube =
-					glm::translate(glm::vec3(x_pos, y_pos, z_pos)) *
-					glm::mat4(1.0f);
-				wall.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
-				wall.proj_matrix = myGraphics.proj_matrix;
-				k += 1;
-			}
-		}
-	}
-	emitter_visual.mv_matrix = myGraphics.viewMatrix *
-		glm::translate(glm::vec3(emitter.position.x, emitter.position.y, emitter.position.z)) *
-		glm::scale(glm::vec3(1.0f,1.0f, 1.0f)) *
-		glm::mat4(1.0f);
-	emitter_visual.proj_matrix = myGraphics.proj_matrix;
-
 		
 	// Calculate floor position and resize
 	myFloor.mv_matrix = myGraphics.viewMatrix *
@@ -185,16 +93,6 @@ void updateSceneElements() {
 		glm::scale(glm::vec3(1000.0f, 0.001f, 1000.0f)) *
 		glm::mat4(1.0f);
 	myFloor.proj_matrix = myGraphics.proj_matrix;
-
-	GLfloat x = 0.0f;
-	GLfloat z = 0.0f;
-	GLfloat speed = 0.01f;
-
-	if (keyStatus[GLFW_KEY_W]) z += speed;
-	if (keyStatus[GLFW_KEY_S]) z -= speed;
-	if (keyStatus[GLFW_KEY_A]) x += speed;
-	if (keyStatus[GLFW_KEY_D]) x -= speed;
-	moveCharacter(x, 0.0f, z);
 
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 }
@@ -204,89 +102,29 @@ void update(const float current_time)
 	const float dt = current_time - previous_time;
 	previous_time = current_time;
 
-	bool jump = false;
-	Vector3 force;
-
 	if (b.position.y > b.scale.y)
 	{
-		force += b.calculateForce(gravity);
+		const auto force = b.calculateForce(gravity);
 		const auto acceleration = b.calculateAcceleration(force);
 		b.calculateVelocity(acceleration, dt);
+		b.calculatePosition(b.velocity, dt);
+	}
+	else
+	{
+		//inverse momentum on collision with ground
+		const float drag = 0.6;
+		b.velocity.y = -1*b.velocity.y * drag;
 		b.calculatePosition(b.velocity, dt);
 	}
 
 
 	//check if bounding box visuals
 	glm::mat4 mv_matrix_cube =
-		glm::translate(glm::vec3(b.position.x, b.position.y, b.position.z)) *
+		glm::translate(b.position) *
 		glm::mat4(1.0f);
 	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 	b.visual.proj_matrix = myGraphics.proj_matrix;
 
-
-	glm::mat4 mv_matrix_bill =
-		glm::translate(glm::vec3(6.0f, 1.0f, 1.0f)) *
-		glm::rotate(myGraphics.cameraPitch, glm::vec3(0.0f, 1.0f, 0.0f))*
-		glm::rotate(myGraphics.cameraYaw, glm::vec3(0.0f, 0.0f, 1.0f))*
-		glm::mat4(1.0f);
-	billboard.mv_matrix = myGraphics.viewMatrix * mv_matrix_bill;
-	billboard.proj_matrix = myGraphics.proj_matrix;
-
-	const float magnitude = 1.0f;
-	for (int i = 0; i < emitter.number_of_particles; i++)
-	{
-		Particle& particle = emitter.particles[i];
-
-		if (not particle.checkExpired(dt))
-		{
-			Vector3 accel;
-			accel.x = physics::getRandomFloat(magnitude, -magnitude/2);
-			accel.y = physics::getRandomFloat(0.5f, 0);
-			accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
-
-			particle.calculateVelocity(accel, dt);
-			particle.calculatePosition(particle.velocity, dt);
-		}
-
-		Sphere& visual = particle_visuals[i];
-
-		glm::mat4 mv_matrix_sphere =
-			glm::translate(glm::vec3(particle.position.x, particle.position.y, particle.position.z)) *
-			glm::scale(glm::vec3(0.1f,0.1f,0.1f))*
-			glm::mat4(1.0f);
-		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
-		visual.proj_matrix = myGraphics.proj_matrix;
-	}
-}
-
-void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
-{
-	//calculate displacements
-	GLfloat new_x = myCharacter.pos_x + x;
-	GLfloat new_y = myCharacter.pos_y + y;
-	GLfloat new_z = myCharacter.pos_z + z;
-
-	GLfloat new_roll = myCharacter.roll + z;
-	GLfloat new_pitch = myCharacter.pitch + x;
-	GLfloat new_yaw = myCharacter.yaw + y;
-
-	//translate and rotate accordingly
-	glm::mat4 mv_matrix_character = 
-		glm::translate(glm::vec3(new_x, new_y, new_z)) *
-		glm::rotate(new_roll, glm::vec3(1.0f, 0.0f, 0.0f)) *
-		glm::rotate(new_pitch, glm::vec3(0.0f, 1.0f, 0.0f)) *
-		glm::rotate(new_yaw, glm::vec3(0.0f, 0.0f, 1.0f)) *
-		glm::mat4(1.0f);
-	myCharacter.shape.mv_matrix = myGraphics.viewMatrix * mv_matrix_character;
-	myCharacter.shape.proj_matrix = myGraphics.proj_matrix;
-
-	//update Character
-	myCharacter.pos_x = new_x;
-	myCharacter.pos_y = new_y;
-	myCharacter.pos_z = new_z;
-	myCharacter.roll = new_roll;
-	myCharacter.pitch = new_pitch;
-	myCharacter.yaw = new_yaw;
 }
 
 void renderScene() {
@@ -294,19 +132,8 @@ void renderScene() {
 	myGraphics.ClearViewport();
 	myFloor.Draw();
 	// Draw objects in screen
-	for (auto& wall : walls)
-	{
-		wall.Draw();
-	}
-	myCharacter.shape.Draw();
 	b.visual.Draw();
-	emitter_visual.Draw();
-	billboard.Draw();
 
-	for (auto& p : particle_visuals)
-	{
-		p.Draw();
-	}
 }
 
 // CallBack functions low level functionality.
