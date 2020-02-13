@@ -5,7 +5,7 @@
 class Particle
 {
 public:
-	Particle(Vector3 p, float m)
+	Particle(const glm::vec3& p, float m)
 	{
 		position = p;
 		emitter_position = p;
@@ -14,11 +14,6 @@ public:
 	};
 
 	~Particle() {};
-
-	Vector3 position;
-	Vector3 velocity;
-	Vector3 acceleration;
-	Vector3 force;
 
 	float mass = 1.0f;
 	float lifetime = 0.0f;
@@ -40,48 +35,85 @@ public:
 		return false;
 	}
 	
-	Vector3 calculateForce(const Vector3& acceleration)
+	glm::vec3 calculateForce(const glm::vec3& acceleration)
 	{
 		return physics::calculateForce(acceleration, mass);
 	}
 
-	Vector3 calculateAcceleration(const Vector3& force)
+	glm::vec3 calculateAcceleration(const glm::vec3& force)
 	{
 		return physics::calculateAcceleration(force, mass);
 	}
 
-	void calculateVelocity(const Vector3& acceleration, const float dt)
+	void calculateVelocity(const glm::vec3& acceleration, const float dt)
 	{
-		Vector3 velocity_dt = physics::calculateVelocity(acceleration, dt);
+		glm::vec3 velocity_dt = physics::calculateVelocity(acceleration, dt);
 		velocity += velocity_dt;
 	}
 
-	void calculatePosition(const Vector3& velocity, const float dt)
+	void calculatePosition(const glm::vec3& velocity, const float dt)
 	{
-		Vector3 position_dt = physics::calculatePosition(velocity, dt);
+		glm::vec3 position_dt = physics::calculatePosition(velocity, dt);
 		position += position_dt;
+	}
+	
+	glm::vec3 getPosition() const
+	{
+		return position;
+	}
+
+	glm::vec3 getVelocity() const
+	{
+		return velocity;
+	}
+
+	void resetPosition()
+	{
+		position = emitter_position;
+		velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+		return;
 	}
 
 private:
-	Vector3 emitter_position;
+	glm::vec3 emitter_position;
+	glm::vec3 position;
+	glm::vec3 velocity;
+	glm::vec3 acceleration;
+	glm::vec3 force;
 };
 
 class Emitter
 {
 public:
-	Emitter(Vector3 pos)
+	Emitter()
 	{
+	};
+
+	~Emitter() {};
+
+	void spawn(const glm::vec3& pos, const int n)
+	{
+		number_of_particles = n;
 		position = pos;
 		for (int i = 0; i < number_of_particles; i++)
 		{
 			Particle p(pos, 0.0f);
 			particles.push_back(p);
 		}
-	};
+	}
 
-	~Emitter() {};
+	Particle& getParticle(const int i)
+	{
+		return particles[i];
+	}
 
-	int number_of_particles = 100;
+	glm::vec3 getPosition()
+	{
+		return position;
+	}
+	
+private:
+	int number_of_particles  = 0;
 	std::vector<Particle> particles;
-	Vector3 position;
+	glm::vec3 position;
 };
