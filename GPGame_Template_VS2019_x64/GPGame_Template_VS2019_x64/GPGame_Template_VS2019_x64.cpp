@@ -1,26 +1,27 @@
 #include "GP_Template.h"
 #include "AABB.h"
 
-constexpr bool grid[10][10] = { {0, 0, 1, 1, 1, 1, 1, 1, 1, 1},
+constexpr bool grid[10][10] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 								{0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
 								{1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
-								{1, 0, 0, 0, 1, 0, 0, 1, 0, 1},
+								{1, 0, 0, 0, 1, 0, 0, 1, 1, 1},
 								{1, 0, 1, 1, 0, 0, 0, 1, 0, 1},
 								{1, 0, 1, 0, 0, 0, 0, 1, 1, 1},
 								{1, 0, 1, 0, 0, 1, 0, 0, 0, 1},
-								{1, 0, 1, 1, 1, 0, 0, 0, 0, 0},
-								{1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
-								{1, 1, 1, 1, 1, 1, 1, 1, 0, 1} }; //create blocks on 1s, empty space on zeros
+								{1, 0, 1, 1, 1, 0, 0, 1, 1, 1},
+								{1, 0, 0, 1, 0, 0, 0, 0, 0, 1},
+								{1, 1, 1, 1, 1, 1, 1, 1, 0, 0} }; //create blocks on 1s, empty space on zeros
 
 constexpr int ROWS = 10;
 constexpr int COLS = 10;
+constexpr int MAZE_SIZE = ROWS * COLS;
 
 struct character
 {
 	Sphere shape;
-	GLfloat pos_x = 0.0f;
+	GLfloat pos_x = 1.0f;
 	GLfloat pos_y = 0.5f;
-	GLfloat pos_z = 0.0f;
+	GLfloat pos_z = 1.0f;
 	GLfloat roll = 0.0f;
 	GLfloat pitch = 0.0f;
 	GLfloat yaw = 0.0f;
@@ -28,8 +29,14 @@ struct character
 } myCharacter;
 
 AABB character_aabb;
-std::vector<AABB> wall_aabbs;
-std::vector<Cube> walls;
+typedef struct wall
+{
+	Cube visual;
+	AABB aabb;
+	glm::vec3 pos;
+};
+std::vector<wall> inner_walls;
+std::vector<wall> outer_walls;
 
 int main()
 {
@@ -64,6 +71,21 @@ int main()
 	return 0;
 }
 
+wall makeOuterWall(const glm::vec3 pos)
+{
+	wall w;
+	Cube c;
+	c.fillColor = glm::vec4(0.2f, 0.2f, 1.0f, 1.0f);
+	c.Load();
+	w.pos = pos;
+	w.visual = c;
+	AABB aabb;
+	aabb.c = Point(pos.x, pos.y, pos.z);
+	aabb.r = Point{ 0.5f, 0.5f, 0.5f };
+	w.aabb = aabb;
+	return w;
+}
+
 void startup() {
 	// Keep track of the running time
 	GLfloat currentTime = (GLfloat)glfwGetTime();    // retrieve timelapse
@@ -95,15 +117,43 @@ void startup() {
 			const bool create_wall = grid[i][j];
 			if (create_wall)
 			{
-				Cube wall;
-				wall.Load();
-				walls.push_back(wall);
+				glm::vec3 pos;
+				pos.x = ROWS - i;
+				pos.y = 0.5f;
+				pos.z = COLS - j;
+				wall w;
+				Cube c;
+				c.Load();
+				w.visual = c;
+				w.pos = pos;
 				AABB aabb;
-				aabb.c = Point(-500.0f, -500.0f, -500.0f);
+				aabb.c = Point(pos.x, pos.y, pos.z);
 				aabb.r = Point(0.5f, 0.5f, .5f);
-				wall_aabbs.push_back(aabb);
+				w.aabb = aabb;
+				inner_walls.push_back(w);
 			}
 		}
+	}
+	//outer walls
+	for (int i = 0; i < ROWS + 1; i++)
+	{
+		glm::vec3 pos;
+		pos.x = ROWS - i;
+		pos.y = 0.5f;
+		pos.z = 0;
+		outer_walls.push_back(makeOuterWall(pos)); //top barrier
+		pos.z = COLS + 1;
+		outer_walls.push_back(makeOuterWall(pos)); //bottom barrier
+	}
+	for (int i = 0; i < COLS + 1; i++)
+	{
+		glm::vec3 pos;
+		pos.x = 0;
+		pos.y = 0.5f;
+		pos.z = COLS - i;
+		outer_walls.push_back(makeOuterWall(pos)); //top barrier
+		pos.x = COLS + 1;
+		outer_walls.push_back(makeOuterWall(pos)); //bottom barrier
 	}
 	//character
 	myCharacter.shape.Load();
@@ -170,30 +220,26 @@ void updateSceneElements() {
 	lastTime = currentTime;                            // Save for next frame calculations.
 
 	//createMaze
-	int k = 0;
-	for (int i = 0; i < ROWS; i++)
+	for (auto& wall: inner_walls)
 	{
-		for (int j = 0; j < COLS; j++)
-		{
-			const bool wall_exists = grid[i][j];
-			if (wall_exists)
-			{
-				Cube& wall = walls[k];
-				// Calculate Cube position
-				const auto cube_size = 1.0f;
-				const auto x_pos = i * cube_size;
-				const auto y_pos = 0.5f;
-				const auto z_pos = j * cube_size;
+		// Calculate Cube position
+		glm::mat4 mv_matrix_cube =
+			glm::translate(glm::vec3(wall.pos.x, wall.pos.y, wall.pos.z)) *
+			glm::scale(glm::vec3(1.0f, 0.5f, 1.0f))*
+			glm::mat4(1.0f);
+		wall.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
+		wall.visual.proj_matrix = myGraphics.proj_matrix;
+	}
 
-				glm::mat4 mv_matrix_cube =
-					glm::translate(glm::vec3(x_pos, y_pos, z_pos)) *
-					glm::mat4(1.0f);
-				wall.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
-				wall.proj_matrix = myGraphics.proj_matrix;
-				wall_aabbs[k].c = Point(x_pos, y_pos, z_pos);
-				k += 1;
-			}
-		}
+	for (auto& wall : outer_walls)
+	{
+		// Calculate Cube position
+		glm::mat4 mv_matrix_cube =
+			glm::translate(glm::vec3(wall.pos.x, wall.pos.y, wall.pos.z)) *
+			glm::scale(glm::vec3(1.0f, 0.5f, 1.0f)) *
+			glm::mat4(1.0f);
+		wall.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
+		wall.visual.proj_matrix = myGraphics.proj_matrix;
 	}
 		
 	// Calculate floor position and resize
@@ -232,12 +278,23 @@ void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
 	character_aabb.c = Point(new_x, new_y, new_z);
 
 	bool collision = false;
-	for (int i = 0; i < wall_aabbs.size(); i++)
+	for (auto wall: inner_walls)
 	{
-		if (isCollision(character_aabb, wall_aabbs[i]))
+		if (isCollisionSphere(character_aabb, wall.aabb))
 		{
 			collision = true;
 			break;
+		}
+	}
+	if (not collision) {
+
+		for (auto wall : outer_walls)
+		{
+			if (isCollisionSphere(character_aabb, wall.aabb))
+			{
+				collision = true;
+				break;
+			}
 		}
 	}
 	if (collision)
@@ -278,9 +335,13 @@ void renderScene() {
 	myGraphics.ClearViewport();
 	myFloor.Draw();
 	// Draw objects in screen
-	for (auto& wall : walls)
+	for (auto& wall : inner_walls)
 	{
-		wall.Draw();
+		wall.visual.Draw();
+	}
+	for (auto& wall : outer_walls)
+	{
+		wall.visual.Draw();
 	}
 	myCharacter.shape.Draw();
 }
