@@ -5,12 +5,13 @@
 
 typedef struct Particle
 {
-	Particle(const glm::vec3& p, float m)
+	Particle(const glm::vec3 p, float m)
 	{
 		position = p;
 		emitter_position = p;
 		mass = m;
 		lifetime = physics::getRandomFloat(5.0);
+		velocity = glm::vec3(0.0f, 1.0f, 0.0f);
 	};
 
 	float mass = 1.0f;
@@ -28,7 +29,7 @@ typedef struct Particle
 			lifetime = physics::getRandomFloat(5.0);
 			age = 0.0f;
 			position = emitter_position;
-			velocity = { 0.0, 0.0f, 0.0f };
+			velocity = { 0.0, 1.0f, 0.0f };
 			return true;
 		}
 		return false;
@@ -37,7 +38,7 @@ typedef struct Particle
 	void resetPosition()
 	{
 		position = emitter_position;
-		velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+		velocity = glm::vec3(0.0f, 1.0f, 0.0f);
 		return;
 	}
 };

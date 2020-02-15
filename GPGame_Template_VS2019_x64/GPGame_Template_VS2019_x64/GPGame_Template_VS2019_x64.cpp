@@ -7,7 +7,7 @@ bounding_box::BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
 Cube emitter_visual;
 Emitter emitter;
 std::vector<Cube> particle_visuals;
-constexpr int number_of_particles = 1000;
+constexpr int number_of_particles = 360;
 
 int main()
 {
