@@ -67,3 +67,10 @@ public:
 	Line();
 	~Line();
 };
+
+class Plane : public Shapes
+{
+public:
+	Plane();
+	~Plane();
+};
