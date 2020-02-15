@@ -41,8 +41,6 @@ void onMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 void onMouseMoveCallback(GLFWwindow* window, double x, double y);
 void onMouseWheelCallback(GLFWwindow* window, double xoffset, double yoffset);
 
-void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z);
-
 // VARIABLES
 bool        quit = false;
 float       deltaTime = 0.0f;    // Keep track of time per frame.

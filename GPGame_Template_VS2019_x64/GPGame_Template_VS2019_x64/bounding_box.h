@@ -1,29 +1,32 @@
 #pragma once
 #include "shapes.h"
-#include "particle.h"
-#include "physics.h"
 #ifndef BOUNDING_BOX_H
 #define BOUNDING_BOX_H
 
-class BoundingBox : public Particle {
-public:
-	BoundingBox(const glm::vec3 position, float mass, bool show_box = true) : Particle(position, mass)
-	{
-		visual.fillColor = glm::vec4(0.0, 0.0, 0.0, 1.0);
-		visual.lineColor = glm::vec4(0.2f, 0.2, 0.2, 1.0);
-		visual.lineWidth = 5.0f;
-	}
+namespace bounding_box
+{
+	class BoundingBox {
+	public:
+		BoundingBox(const glm::vec3 position, float mass, bool show_box = true);
 
-	~BoundingBox() {};
+		~BoundingBox();
 
-	Cube visual;
-	glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+		Cube visual;
 
-	void setScale(const float x, const float y, const float z)
-	{
-		scale.x = x;
-		scale.y = y;
-		scale.z = z;
-	}
-};
+		void setScale(const float x, const float y, const float z);
+
+		glm::vec3 getPosition() const;
+
+		glm::vec3 getVelocity() const;
+
+		glm::vec3 getScale() const;
+
+		glm::vec3 position;
+		glm::vec3 velocity;
+		glm::vec3 acceleration;
+		glm::vec3 force;
+		float mass;
+		glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+	};
+}
 #endif //

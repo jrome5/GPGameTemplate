@@ -1,8 +1,9 @@
 #include "GP_Template.h"
 #include "bounding_box.h"
+#include "physics.h"
 #include "particle.h"
 #include <algorithm>
-BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
+bounding_box::BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
 Cube emitter_visual;
 Emitter emitter;
 std::vector<Cube> particle_visuals;
@@ -132,32 +133,27 @@ void update(const float current_time)
 			accel.y = physics::getRandomFloat(0.5f, 0);
 			accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
 
-			particle.calculateVelocity(accel, dt);
-			particle.calculatePosition(particle.getVelocity(), dt);
+			particle.velocity += physics::calculateVelocity(accel, dt);
+			particle.position += physics::calculatePosition(particle.velocity, dt);
 		}
 
 		auto& visual = particle_visuals[i];
 
 		glm::mat4 mv_matrix_sphere =
-			glm::translate(particle.getPosition()) *
+			glm::translate(particle.position) *
 			glm::scale(glm::vec3(0.01f,0.01f,0.01f))*
 			glm::mat4(1.0f);
 		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
 		visual.proj_matrix = myGraphics.proj_matrix;
 	}
 
-	if (b.getPosition().y > b.scale.y)
+	if (b.getPosition().y > b.getScale().y)
 	{
-		const auto force = b.calculateForce(gravity);
-		const auto acceleration = b.calculateAcceleration(force);
-		b.calculateVelocity(acceleration, dt);
-		b.calculatePosition(b.getVelocity(), dt);
+		const auto force = physics::calculateForce(gravity, b.mass);
+		const auto acceleration = physics::calculateAcceleration(force, b.mass);
+		b.velocity += physics::calculateVelocity(acceleration, dt);
+		b.position = b.position + physics::calculatePosition(b.getVelocity(), dt);
 	}
-	else
-	{
-		//b.resetPosition();
-	}
-
 
 	//check if bounding box visuals
 	glm::mat4 mv_matrix_cube =
@@ -165,7 +161,6 @@ void update(const float current_time)
 		glm::mat4(1.0f);
 	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 	b.visual.proj_matrix = myGraphics.proj_matrix;
-	cout << "\nb pos y:" << b.getPosition().y;
 }
 
 void renderScene() {
