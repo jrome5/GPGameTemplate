@@ -74,3 +74,10 @@ public:
 	Plane();
 	~Plane();
 };
+
+class Triangle : public Shapes
+{
+public:
+	Triangle();
+	~Triangle();
+};

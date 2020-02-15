@@ -58,6 +58,7 @@ Cube        myFloor;
 Line        myLine;
 Cylinder    myCylinder;
 Plane		myPlane;
+Triangle	myTriangle;
 
 // Some global variable to do the animation.
 float t = 0.001f;            // Global variable for animation
@@ -144,6 +145,11 @@ void startup() {
 	myPlane.fillColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);
 	myPlane.lineColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
 	myPlane.lineWidth = 5.0f;
+
+	myTriangle.Load();
+	myTriangle.fillColor = glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
+	myTriangle.lineColor = glm::vec4(0.2f, 0.2f, 0.2f, 1.0f);
+	myTriangle.lineWidth = 5.0f;
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
@@ -267,10 +273,16 @@ void updateSceneElements() {
 	// Calculate Plane
 	myPlane.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(1.0f, 3.0f, 1.0f)) *
-		glm::rotate(glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f)) *
-		glm::scale(glm::vec3(1.0f, 0.5f, 0.5f)) *
+		glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) *
 		glm::mat4(1.0f);
 	myPlane.proj_matrix = myGraphics.proj_matrix;
+
+	// Calculate Triangle
+	myTriangle.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(-1.0f, 3.0f, 1.0f)) *
+		glm::scale(glm::vec3(0.5f ,0.5f, 0.5f)) *
+		glm::mat4(1.0f);
+	myTriangle.proj_matrix = myGraphics.proj_matrix;
 
 
 	t += 0.01f; // increment movement variable
@@ -296,6 +308,8 @@ void renderScene() {
 	myLine.Draw();
 	myCylinder.Draw();
 	myPlane.Draw();
+	myTriangle.Draw();
+
 }
 
 
