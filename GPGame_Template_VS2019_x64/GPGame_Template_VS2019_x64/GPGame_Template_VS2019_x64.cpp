@@ -214,7 +214,7 @@ void startup() {
 	character_aabb.r = Point(0.4, 0.5f, 0.4f);
 
 	std::vector<Vertex> path;
-	//a_star_search(graph, 0, MAZE_SIZE-1, path);
+	a_star_search(graph, 0, MAZE_SIZE-1, path);
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
