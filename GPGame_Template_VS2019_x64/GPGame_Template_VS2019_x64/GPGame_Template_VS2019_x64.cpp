@@ -104,6 +104,10 @@ void startup() {
 	myGraphics.aspect = (float)myGraphics.windowWidth / (float)myGraphics.windowHeight;
 	myGraphics.proj_matrix = glm::perspective(glm::radians(50.0f), myGraphics.aspect, 0.1f, 1000.0f);
 
+	myGraphics.cameraPosition = glm::vec3(5.16f, 9.44f, -2.33f);
+	myGraphics.cameraYaw = 90.05f;
+	myGraphics.cameraPitch = -55.05f;
+
 	// Load Geometry examples
 	myFloor.Load();
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
@@ -363,6 +367,11 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 
 	// toggle showing mouse.
 	if (keyStatus[GLFW_KEY_M]) {
+		cout << "Camera up:" << myGraphics.cameraUp.x << " " << myGraphics.cameraUp.y << " " << myGraphics.cameraUp.z << "\n";
+		cout << "Camera pitch:" << myGraphics.cameraPitch << "\n";
+		cout << "Camera yaw:" << myGraphics.cameraYaw << "\n";
+		cout << "Camera pos:" << myGraphics.cameraPosition.x << " " << myGraphics.cameraPosition.y << " " << myGraphics.cameraPosition.z << "/n";
+		cout << "Graph 5 " << graph.getVertex(5).getPosition().x;
 		mouseEnabled = !mouseEnabled;
 		myGraphics.ToggleMouse();
 	}
