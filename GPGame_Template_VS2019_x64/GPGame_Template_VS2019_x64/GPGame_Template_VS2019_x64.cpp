@@ -1,7 +1,8 @@
 #include "GP_Template.h"
 #include "AABB.h"
+#include <math.h> 
 
-constexpr bool grid[10][10] = { {1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+constexpr bool grid[10][10] = { {0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 								{0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
 								{1, 0, 1, 0, 1, 1, 0, 1, 0, 1},
 								{1, 0, 0, 0, 1, 0, 0, 1, 1, 1},
@@ -37,6 +38,7 @@ typedef struct wall
 };
 std::vector<wall> inner_walls;
 std::vector<wall> outer_walls;
+Cube active_cell;
 
 int main()
 {
@@ -113,18 +115,22 @@ void startup() {
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
+	active_cell.Load();
+	active_cell.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 0.75f);
+	active_cell.lineColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
 	//createMaze
 	for (int i = 0; i < ROWS; i++)
 	{
 		for (int j = 0; j < COLS; j++)
 		{
+			glm::vec3 pos;
+			pos.x = float(ROWS - i);
+			pos.y = 0.5f;
+			pos.z = float(COLS - j);
 			const bool create_wall = grid[i][j];
 			if (create_wall)
 			{
-				glm::vec3 pos;
-				pos.x = ROWS - i;
-				pos.y = 0.5f;
-				pos.z = COLS - j;
 				wall w;
 				Cube c;
 				c.Load();
@@ -142,11 +148,11 @@ void startup() {
 	for (int i = 0; i < ROWS + 1; i++)
 	{
 		glm::vec3 pos;
-		pos.x = ROWS - i;
+		pos.x = float(ROWS - i);
 		pos.y = 0.5f;
 		pos.z = 0;
 		outer_walls.push_back(makeOuterWall(pos)); //top barrier
-		pos.z = COLS + 1;
+		pos.z = float(COLS + 1);
 		outer_walls.push_back(makeOuterWall(pos)); //bottom barrier
 	}
 	for (int i = 0; i < COLS + 1; i++)
@@ -154,9 +160,9 @@ void startup() {
 		glm::vec3 pos;
 		pos.x = 0;
 		pos.y = 0.5f;
-		pos.z = COLS - i;
+		pos.z = float(COLS - i);
 		outer_walls.push_back(makeOuterWall(pos)); //top barrier
-		pos.x = COLS + 1;
+		pos.x = float(COLS + 1);
 		outer_walls.push_back(makeOuterWall(pos)); //bottom barrier
 	}
 	//character
@@ -263,7 +269,17 @@ void updateSceneElements() {
 	if (keyStatus[GLFW_KEY_RIGHT]) x -= speed;
 	moveCharacter(x, 0.0f, z);
 
+	// Calculate floor position and resize
+	glm::vec3 cell_pos;
+	cell_pos.x = roundf(myCharacter.pos_x);
+	cell_pos.y = 0.5f;
+	cell_pos.z = roundf(myCharacter.pos_z);
 
+	active_cell.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(cell_pos)) *
+		glm::scale(glm::vec3(1.0f, 0.5f, 1.0f)) *
+		glm::mat4(1.0f);
+	active_cell.proj_matrix = myGraphics.proj_matrix;
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 
 }
@@ -348,6 +364,7 @@ void renderScene() {
 		wall.visual.Draw();
 	}
 	myCharacter.shape.Draw();
+	active_cell.Draw();
 }
 
 // CallBack functions low level functionality.
