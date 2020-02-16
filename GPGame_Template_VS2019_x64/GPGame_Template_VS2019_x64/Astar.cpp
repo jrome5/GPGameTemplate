@@ -25,7 +25,7 @@ vector<Vertex> reconstruct_path(Graph g, int start_id, int goal_id, map<int, int
         current = g.getVertex(current_id);
         path.push_back(current);
         auto pos = current.getPosition();
-        std::cout << pos.x << ", " << pos.y << "\n";
+        //std::cout << pos.x << ", " << pos.y << "\n";
     }
 
     path.push_back(g.getVertex(start_id)); // optional

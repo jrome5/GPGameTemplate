@@ -40,8 +40,11 @@ typedef struct wall
 };
 std::vector<wall> inner_walls;
 std::vector<wall> outer_walls;
+std::vector<Vertex> path;
+std::vector<Cube> path_visuals;
 Graph graph;
 Cube active_cell;
+glm::vec3 prev_cell_pos(0.0f, 0.0f, 0.0f);
 
 int main()
 {
@@ -121,7 +124,29 @@ void startup() {
 	active_cell.Load();
 	active_cell.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 0.75f);
 	active_cell.lineColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	
+	createMaze();
 
+	for (int i = 0; i < MAZE_SIZE; i++)
+	{
+		Cube c;
+		c.Load();
+		c.fillColor = glm::vec4(1.0f, 1.0f, 0.0f, 0.75f);
+		path_visuals.push_back(c);
+	}
+
+	//character
+	myCharacter.shape.Load();
+	myCharacter.shape.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	character_aabb.r = Point(myCharacter.pos_x, myCharacter.pos_y, myCharacter.pos_z);
+	character_aabb.r = Point(0.4, 0.5f, 0.4f);
+	// Optimised Graphics
+	myGraphics.SetOptimisations();        // Cull and depth testing
+
+}
+
+void createMaze()
+{
 	//createMaze
 	int k = 0;
 	for (int i = 0; i < ROWS; i++)
@@ -156,8 +181,7 @@ void startup() {
 			k++;
 		}
 	}
-	Vertex n5 = graph.getVertex(MAZE_SIZE-1);
-	cout << "Size " << graph.getNumber() << "\n";
+	//cout << "Size " << graph.getNumber() << "\n";
 	//Connect cells
 	for (auto p : graph.getVertices())
 	{
@@ -174,18 +198,18 @@ void startup() {
 			graph.addEdge(frm, frm + 1, 1);
 		}
 	}
-	for (auto p : graph.getVertices())
-	{
-		Vertex vertex = p.second;
-		for (auto v : vertex.getConnections())
-		{
-			int id = v.first;
-			auto pos = graph.getVertex(id).getPosition();
-			cout << "(" << pos.x << ", " << pos.y << ")";
-			cout << id << ", ";
-		}
-		cout << "\n";
-	}
+	//for (auto p : graph.getVertices())
+	//{
+	//	Vertex vertex = p.second;
+	//	for (auto v : vertex.getConnections())
+	//	{
+	//		int id = v.first;
+	//		auto pos = graph.getVertex(id).getPosition();
+	//		cout << "(" << pos.x << ", " << pos.y << ")";
+	//		cout << id << ", ";
+	//	}
+	//	cout << "\n";
+	//}
 	//outer walls
 	for (int i = 0; i < ROWS + 1; i++)
 	{
@@ -207,17 +231,6 @@ void startup() {
 		pos.x = float(COLS + 1);
 		outer_walls.push_back(makeOuterWall(pos)); //bottom barrier
 	}
-	//character
-	myCharacter.shape.Load();
-	myCharacter.shape.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-	character_aabb.r = Point(myCharacter.pos_x, myCharacter.pos_y, myCharacter.pos_z);
-	character_aabb.r = Point(0.4, 0.5f, 0.4f);
-
-	std::vector<Vertex> path;
-	a_star_search(graph, 0, MAZE_SIZE-1, path);
-	// Optimised Graphics
-	myGraphics.SetOptimisations();        // Cull and depth testing
-
 }
 
 void updateCamera() {
@@ -304,7 +317,7 @@ void updateSceneElements() {
 
 	GLfloat x = 0.0f;
 	GLfloat z = 0.0f;
-	GLfloat speed = 0.01f;
+	GLfloat speed = 0.05f;
 
 	if (keyStatus[GLFW_KEY_UP]) z += speed;
 	if (keyStatus[GLFW_KEY_DOWN]) z -= speed;
@@ -318,13 +331,44 @@ void updateSceneElements() {
 	cell_pos.y = 0.5f;
 	cell_pos.z = roundf(myCharacter.pos_z);
 
+	if (cell_pos != prev_cell_pos)
+	{
+		cout << "New path";
+		path.clear();
+		int start = (ROWS-cell_pos.x)*ROWS + (COLS-cell_pos.z); 
+		a_star_search(graph, start, MAZE_SIZE - 1, path);
+		prev_cell_pos = cell_pos;
+	}
+
 	active_cell.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(cell_pos)) *
 		glm::scale(glm::vec3(1.0f, 0.5f, 1.0f)) *
 		glm::mat4(1.0f);
 	active_cell.proj_matrix = myGraphics.proj_matrix;
-	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 
+	for (int i = 0; i < MAZE_SIZE; i++)
+	{
+		Cube& c = path_visuals[i];
+		if (i < path.size())
+		{
+			Vertex p = path[i];
+			auto pos = p.getPosition();
+			c.mv_matrix = myGraphics.viewMatrix *
+				glm::translate(glm::vec3(pos.x, 0.0f, pos.y)) *
+				glm::scale(glm::vec3(1.0f, 0.25f, 1.0f)) *
+				glm::mat4(1.0f);
+			c.proj_matrix = myGraphics.proj_matrix;
+		}
+		else //create null
+		{
+			c.mv_matrix = myGraphics.viewMatrix *
+				glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
+				glm::scale(glm::vec3(0.0f, 0.0f, 0.0f)) *
+				glm::mat4(1.0f);
+			c.proj_matrix = myGraphics.proj_matrix;
+		}
+	}
+	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 }
 
 void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z)
@@ -405,6 +449,10 @@ void renderScene() {
 	for (auto& wall : outer_walls)
 	{
 		wall.visual.Draw();
+	}
+	for (auto& p : path_visuals)
+	{
+		p.Draw();
 	}
 	myCharacter.shape.Draw();
 	active_cell.Draw();
