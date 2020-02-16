@@ -2,6 +2,7 @@
 #include "AABB.h"
 #include <math.h> 
 #include "graph.h"
+#include "Astar.h"
 
 constexpr bool grid[10][10] = { {0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 								{0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
@@ -21,9 +22,9 @@ constexpr int MAZE_SIZE = ROWS * COLS;
 struct character
 {
 	Sphere shape;
-	GLfloat pos_x = 1.0f;
+	GLfloat pos_x = float(ROWS);
 	GLfloat pos_y = 0.5f;
-	GLfloat pos_z = 1.0f;
+	GLfloat pos_z = float(COLS);
 	GLfloat roll = 0.0f;
 	GLfloat pitch = 0.0f;
 	GLfloat yaw = 0.0f;
@@ -133,6 +134,7 @@ void startup() {
 			pos.z = float(COLS - j);
 			const bool create_wall = grid[i][j];
 			Vertex n;
+			n.setID(k);
 			n.setPosition(pos.x, pos.z);
 			if (create_wall)
 			{
@@ -152,8 +154,34 @@ void startup() {
 			k++;
 		}
 	}
-	Vertex n5 = graph.getVertex(5);
+	Vertex n5 = graph.getVertex(MAZE_SIZE-1);
 	cout << "Graph 5: (" << n5.getPosition().x << ", " << n5.getPosition().y;
+	cout << "Size " << graph.getNumber() << "\n";
+	//Connect cells
+	for (int frm = 0; frm < graph.getNumber(); frm++)
+	{
+		Vertex v = graph.getVertex(frm);
+		int cost = v.isWall() ? 1000 : 1;
+		if ((frm + ROWS) <= (MAZE_SIZE - 1))
+		{
+			graph.addEdge(frm, frm + ROWS, cost);
+		}
+		if (frm % ROWS != (ROWS - 1))
+		{
+			graph.addEdge(frm, frm + 1, cost);
+		}
+	}
+	for (int i = 0; i < MAZE_SIZE; i++)
+	{
+		for (auto v : graph.getVertex(i).getConnections())
+		{
+			int id = v.first;
+			auto pos = graph.getVertex(id).getPosition();
+			cout << "(" << pos.x << ", " << pos.y << ")";
+			cout << id << ", ";
+		}
+		cout << "\n";
+	}
 	//outer walls
 	for (int i = 0; i < ROWS + 1; i++)
 	{
@@ -181,10 +209,8 @@ void startup() {
 	character_aabb.r = Point(myCharacter.pos_x, myCharacter.pos_y, myCharacter.pos_z);
 	character_aabb.r = Point(0.4, 0.5f, 0.4f);
 
-	//Node start = graph.getVertex(0);
-	//Node goal = graph.getVertex(MAZE_SIZE-1);
-	//std::vector<Node> path;
-	//a_star_search(graph, start, goal, path);
+	std::vector<Vertex> path;
+	//a_star_search(graph, 0, MAZE_SIZE-1, path);
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
