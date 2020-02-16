@@ -1,6 +1,7 @@
 #include "GP_Template.h"
 #include "AABB.h"
 #include <math.h> 
+#include "graph.h"
 
 constexpr bool grid[10][10] = { {0, 1, 1, 1, 1, 1, 1, 1, 1, 1},
 								{0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
@@ -38,6 +39,7 @@ typedef struct wall
 };
 std::vector<wall> inner_walls;
 std::vector<wall> outer_walls;
+Graph graph;
 Cube active_cell;
 
 int main()
@@ -120,6 +122,7 @@ void startup() {
 	active_cell.lineColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 
 	//createMaze
+	int k = 0;
 	for (int i = 0; i < ROWS; i++)
 	{
 		for (int j = 0; j < COLS; j++)
@@ -129,6 +132,8 @@ void startup() {
 			pos.y = 0.5f;
 			pos.z = float(COLS - j);
 			const bool create_wall = grid[i][j];
+			Vertex n;
+			n.setPosition(pos.x, pos.z);
 			if (create_wall)
 			{
 				wall w;
@@ -141,9 +146,14 @@ void startup() {
 				aabb.r = Point(0.5f, 0.5f, .5f);
 				w.aabb = aabb;
 				inner_walls.push_back(w);
+				n.setWall(true);
 			}
+			graph.addVertex(n);
+			k++;
 		}
 	}
+	Vertex n5 = graph.getVertex(5);
+	cout << "Graph 5: (" << n5.getPosition().x << ", " << n5.getPosition().y;
 	//outer walls
 	for (int i = 0; i < ROWS + 1; i++)
 	{
@@ -171,7 +181,10 @@ void startup() {
 	character_aabb.r = Point(myCharacter.pos_x, myCharacter.pos_y, myCharacter.pos_z);
 	character_aabb.r = Point(0.4, 0.5f, 0.4f);
 
-
+	//Node start = graph.getVertex(0);
+	//Node goal = graph.getVertex(MAZE_SIZE-1);
+	//std::vector<Node> path;
+	//a_star_search(graph, start, goal, path);
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
@@ -389,6 +402,7 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 		cout << "Camera yaw:" << myGraphics.cameraYaw << "\n";
 		cout << "Camera pos:" << myGraphics.cameraPosition.x << " " << myGraphics.cameraPosition.y << " " << myGraphics.cameraPosition.z << "/n";
 		cout << "Graph 5 " << graph.getVertex(5).getPosition().x;
+
 		mouseEnabled = !mouseEnabled;
 		myGraphics.ToggleMouse();
 	}
