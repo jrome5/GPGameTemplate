@@ -43,16 +43,6 @@ public:
 		id = i;
 	}
 
-	void setWall(const bool wall)
-	{
-		is_wall = wall;
-	}
-
-	bool isWall()
-	{
-		return is_wall;
-	}
-
 	void setDistance(const int d)
 	{
 		distance = d;
@@ -67,7 +57,6 @@ private:
 	int id = -1;
 	Position position;
 	std::map<int, int> adjacent; //id, cost
-	bool is_wall;
 	int distance = 0;
 };
 
@@ -117,6 +106,15 @@ public:
 	int getNumber()
 	{
 		return num_vertices;
+	}
+
+	bool checkID(int id)
+	{
+		auto it = vert_dict.find(id);
+		if (it == vert_dict.end())
+			return false;
+		else
+			return true;
 	}
 
 private:

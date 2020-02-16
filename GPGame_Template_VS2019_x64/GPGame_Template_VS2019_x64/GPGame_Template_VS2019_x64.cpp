@@ -133,9 +133,6 @@ void startup() {
 			pos.y = 0.5f;
 			pos.z = float(COLS - j);
 			const bool create_wall = grid[i][j];
-			Vertex n;
-			n.setID(k);
-			n.setPosition(pos.x, pos.z);
 			if (create_wall)
 			{
 				wall w;
@@ -148,32 +145,39 @@ void startup() {
 				aabb.r = Point(0.5f, 0.5f, .5f);
 				w.aabb = aabb;
 				inner_walls.push_back(w);
-				n.setWall(true);
 			}
-			graph.addVertex(n);
+			else
+			{
+				Vertex n;
+				n.setID(k);
+				n.setPosition(pos.x, pos.z);
+				graph.addVertex(n);
+			}
 			k++;
 		}
 	}
 	Vertex n5 = graph.getVertex(MAZE_SIZE-1);
-	cout << "Graph 5: (" << n5.getPosition().x << ", " << n5.getPosition().y;
 	cout << "Size " << graph.getNumber() << "\n";
 	//Connect cells
-	for (int frm = 0; frm < graph.getNumber(); frm++)
+	for (auto p : graph.getVertices())
 	{
-		Vertex v = graph.getVertex(frm);
-		int cost = v.isWall() ? 1000 : 1;
-		if ((frm + ROWS) <= (MAZE_SIZE - 1))
+		Vertex v = p.second;
+		int frm = p.first;
+		int to = frm + ROWS;
+		if ((frm + ROWS) <= (MAZE_SIZE - 1) && graph.checkID(to))
 		{
-			graph.addEdge(frm, frm + ROWS, cost);
+			graph.addEdge(frm, frm + ROWS, 1);
 		}
-		if (frm % ROWS != (ROWS - 1))
+		to = frm + 1;
+		if (frm % ROWS != (ROWS - 1) && graph.checkID(to))
 		{
-			graph.addEdge(frm, frm + 1, cost);
+			graph.addEdge(frm, frm + 1, 1);
 		}
 	}
-	for (int i = 0; i < MAZE_SIZE; i++)
+	for (auto p : graph.getVertices())
 	{
-		for (auto v : graph.getVertex(i).getConnections())
+		Vertex vertex = p.second;
+		for (auto v : vertex.getConnections())
 		{
 			int id = v.first;
 			auto pos = graph.getVertex(id).getPosition();
@@ -427,8 +431,6 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 		cout << "Camera pitch:" << myGraphics.cameraPitch << "\n";
 		cout << "Camera yaw:" << myGraphics.cameraYaw << "\n";
 		cout << "Camera pos:" << myGraphics.cameraPosition.x << " " << myGraphics.cameraPosition.y << " " << myGraphics.cameraPosition.z << "/n";
-		cout << "Graph 5 " << graph.getVertex(5).getPosition().x;
-
 		mouseEnabled = !mouseEnabled;
 		myGraphics.ToggleMouse();
 	}
