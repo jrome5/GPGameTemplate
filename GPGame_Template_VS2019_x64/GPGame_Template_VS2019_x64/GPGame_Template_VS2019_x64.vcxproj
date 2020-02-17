@@ -157,12 +157,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="bounding_box.cpp" />
     <ClCompile Include="GPGame_Template_VS2019_x64.cpp" />
     <ClCompile Include="graphics.cpp" />
     <ClCompile Include="shapes.cpp" />
+    <ClCompile Include="boid.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="GP_Template.h" />
     <ClInclude Include="graphics.h" />
+    <ClInclude Include="boid.h" />
+    <ClInclude Include="particle.h" />
+    <ClInclude Include="physics.h" />
     <ClInclude Include="shapes.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
