@@ -29,7 +29,7 @@ using namespace std;
 
 // MAIN FUNCTIONS
 void startup();
-//void updateCamera();
+void updateCamera();
 void update(const float current_time);
 void updateSceneElements();
 void renderScene();

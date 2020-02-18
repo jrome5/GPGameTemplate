@@ -15,13 +15,11 @@ class Boid {
 
 public:
 
-	Boid(double maxS, double maxF, double vis);
+	Boid(float maxS, float maxF, float vis);
 	~Boid();
 
-protected:
 
 	// VARIABLES
-
 	glm::vec3  position;
 	glm::vec3  velocity;
 	//glm::vec3  magnitude; set this later
@@ -59,7 +57,7 @@ protected:
 
 	/* Updates the properties of the boid, position, velocity...etc
 	*/
-	void update();
+	void update(const float dt);
 
 
 	/* Keeps the boid within the boundaries of a virtual cage

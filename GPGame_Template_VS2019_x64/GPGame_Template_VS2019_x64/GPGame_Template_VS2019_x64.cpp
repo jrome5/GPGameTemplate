@@ -1,13 +1,14 @@
 #include "GP_Template.h"
 #include "bounding_box.h"
-#include "physics.h"
-#include "particle.h"
 #include <algorithm>
-bounding_box::BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
-Cube emitter_visual;
-Emitter emitter;
-std::vector<Cube> particle_visuals;
-constexpr int number_of_particles = 360;
+#include "boid.h"
+
+std::vector<Cube> boid_visuals;
+constexpr int number_of_boids = 10;
+std::vector<Boid> boids;
+constexpr float MAX_SPEED = 5.0f;
+constexpr float MAX_FORCE = 5.0F;
+constexpr float VISION_RADIUS = 5.0f;
 
 int main()
 {
@@ -20,7 +21,7 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-	
+		updateCamera();
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
 
@@ -75,21 +76,60 @@ void startup() {
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
-	//BoundingBox
-	b.visual.Load();
-	emitter.spawn(glm::vec3{ 0.0f, 0.0f, 0.0f }, number_of_particles);
-	emitter_visual.Load();
-	emitter_visual.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f);
-	for (int i = 0; i < number_of_particles; i++)
+	for (int i = 0; i < number_of_boids; i++)
 	{
 		Cube s;
 		s.Load();
-		particle_visuals.push_back(s);
+		boid_visuals.push_back(s);
+		Boid b(MAX_SPEED, MAX_FORCE, VISION_RADIUS);
+		boids.push_back(b);
 	}
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
+}
 
+void updateCamera() {
+
+	// calculate movement for FPS camera
+	GLfloat xoffset = myGraphics.mouseX - myGraphics.cameraLastX;
+	GLfloat yoffset = myGraphics.cameraLastY - myGraphics.mouseY;    // Reversed mouse movement
+	myGraphics.cameraLastX = (GLfloat)myGraphics.mouseX;
+	myGraphics.cameraLastY = (GLfloat)myGraphics.mouseY;
+
+	GLfloat sensitivity = 0.05f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	myGraphics.cameraYaw += xoffset;
+	myGraphics.cameraPitch += yoffset;
+
+	// check for pitch out of bounds otherwise screen gets flipped
+	if (myGraphics.cameraPitch > 89.0f) myGraphics.cameraPitch = 89.0f;
+	if (myGraphics.cameraPitch < -89.0f) myGraphics.cameraPitch = -89.0f;
+
+	// Calculating FPS camera movement (See 'Additional Reading: Yaw and Pitch to Vector Calculations' in VISION)
+	glm::vec3 front;
+	front.x = cos(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
+	front.y = sin(glm::radians(myGraphics.cameraPitch));
+	front.z = sin(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
+
+	myGraphics.cameraFront = glm::normalize(front);
+
+	// Update movement using the keys
+	GLfloat cameraSpeed = 1.0f * deltaTime;
+	if (keyStatus[GLFW_KEY_W]) myGraphics.cameraPosition += cameraSpeed * myGraphics.cameraFront;
+	if (keyStatus[GLFW_KEY_S]) myGraphics.cameraPosition -= cameraSpeed * myGraphics.cameraFront;
+	if (keyStatus[GLFW_KEY_A]) myGraphics.cameraPosition -= glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
+	if (keyStatus[GLFW_KEY_D]) myGraphics.cameraPosition += glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
+
+	// IMPORTANT PART
+	// Calculate my view matrix using the lookAt helper function
+	if (mouseEnabled) {
+		myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
+			myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
+			myGraphics.cameraUp);												// up
+	}
 }
 
 void updateSceneElements() {
@@ -101,13 +141,6 @@ void updateSceneElements() {
 	deltaTime = currentTime - lastTime;                // Calculate delta time
 	lastTime = currentTime;                            // Save for next frame calculations.
 
-	emitter_visual.mv_matrix = myGraphics.viewMatrix *
-		glm::translate(glm::vec3(emitter.getPosition())) *
-		glm::scale(glm::vec3(1.0f,1.0f, 1.0f)) *
-		glm::mat4(1.0f);
-	emitter_visual.proj_matrix = myGraphics.proj_matrix;
-
-		
 	// Calculate floor position and resize
 	myFloor.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
@@ -122,57 +155,30 @@ void update(const float current_time)
 {
 	const auto dt = std::min(deltaTime, 0.2f);  //TODO: remove this workaround
 	const float magnitude = 5.0f;
-	for (int i = 0; i < number_of_particles; i++)
+	for (int i = 0; i < number_of_boids; i++)
 	{
-		Particle& particle = emitter.getParticle(i);
-
-		if (not particle.checkExpired(dt))
-		{
-			glm::vec3 accel;
-			accel.x = physics::getRandomFloat(magnitude, -magnitude/2);
-			accel.y = physics::getRandomFloat(0.5f, 0);
-			accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
-
-			particle.velocity += physics::calculateVelocity(accel, dt);
-			particle.position += physics::calculatePosition(particle.velocity, dt);
-		}
-
-		auto& visual = particle_visuals[i];
+		Boid& boid = boids[i];
+		auto& visual = boid_visuals[i];
+		boid.behaviour(boids);
+		boid.update(dt);
+		boid.cage();
 
 		glm::mat4 mv_matrix_sphere =
-			glm::translate(particle.position) *
-			glm::scale(glm::vec3(0.01f,0.01f,0.01f))*
+			glm::translate(boid.position) *
+			glm::scale(glm::vec3(0.5f,0.5f,0.5f))*
 			glm::mat4(1.0f);
 		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
 		visual.proj_matrix = myGraphics.proj_matrix;
 	}
-
-	if (b.getPosition().y > b.getScale().y)
-	{
-		const auto force = physics::calculateForce(gravity, b.mass);
-		const auto acceleration = physics::calculateAcceleration(force, b.mass);
-		b.velocity += physics::calculateVelocity(acceleration, dt);
-		b.position = b.position + physics::calculatePosition(b.getVelocity(), dt);
-	}
-
-	//check if bounding box visuals
-	glm::mat4 mv_matrix_cube =
-		glm::translate(b.getPosition()) *
-		glm::mat4(1.0f);
-	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
-	b.visual.proj_matrix = myGraphics.proj_matrix;
 }
 
 void renderScene() {
 	// Clear viewport - start a new frame.
 	myGraphics.ClearViewport();
 	myFloor.Draw();
-	b.visual.Draw();
-	emitter_visual.Draw();
-
-	for (auto& p : particle_visuals)
+	for (auto& boid : boid_visuals)
 	{
-		p.Draw();
+		boid.Draw();
 	}
 }
 
