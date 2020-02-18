@@ -57,7 +57,7 @@ public:
 
 	/* Updates the properties of the boid, position, velocity...etc
 	*/
-	void update(const float dt);
+	void update();
 
 
 	/* Keeps the boid within the boundaries of a virtual cage
@@ -84,6 +84,9 @@ public:
 	*/
 	glm::vec3 divVector(glm::vec3 vec, float con);
 
+	/* Multiplies a vector by a constant
+	*/
+	glm::vec3 mulVector(glm::vec3 vec, float con);
 
 	/* Keeps each element in the vector from exceeding the limit.
 	*  If an element exceeds the limit, it will be set to the limit.

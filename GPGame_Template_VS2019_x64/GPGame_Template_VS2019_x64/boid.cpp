@@ -33,7 +33,7 @@ Boid::~Boid() {
 
 glm::vec3 Boid::align(vector<Boid> flock) {
 	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
-	float total = 0.0f;
+	int total = 0;
 
 	for (int i = 0; i < flock.size(); i++)
 	{
@@ -49,7 +49,7 @@ glm::vec3 Boid::align(vector<Boid> flock) {
 		adjustment = divVector(adjustment, total);
 		adjustment = limitVector(adjustment, maxSpeed);
 		adjustment = subVector(adjustment, velocity);
-		// Will need to set max force
+		adjustment = limitVector(adjustment, maxForce);
 	}
 
 	return adjustment;
@@ -59,9 +59,9 @@ glm::vec3 Boid::align(vector<Boid> flock) {
 glm::vec3 Boid::separation(vector<Boid> flock) {
 	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
 	
-	int total = flock.size();
+	int total = 0;
 
-	for (int i = 0; i < total; i++) {
+	for (int i = 0; i < flock.size(); i++) {
 
 		float dist = distance(flock[i].position, position);
 
@@ -78,16 +78,16 @@ glm::vec3 Boid::separation(vector<Boid> flock) {
 		adjustment = divVector(adjustment, total);
 		adjustment = limitVector(adjustment, maxSpeed);
 		adjustment = subVector(adjustment, velocity);
-		// Will need to set max force
+		adjustment = limitVector(adjustment, maxForce);
 	}
 	return adjustment;
 }
 
 glm::vec3 Boid::cohesion(vector<Boid> flock) {
 	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
-	float total = flock.size();
+	int total = 0;
 
-	for (int i = 0; i < total; i++) {
+	for (int i = 0; i < flock.size(); i++) {
 		
 		float dist = distance(flock[i].position, position);
 
@@ -102,7 +102,7 @@ glm::vec3 Boid::cohesion(vector<Boid> flock) {
 		adjustment = subVector(adjustment, position);
 		adjustment = limitVector(adjustment, maxSpeed);
 		adjustment = subVector(adjustment, velocity);
-		// Will need to set max force
+		adjustment = limitVector(adjustment, maxForce);
 	}
 
 	return adjustment;
@@ -111,27 +111,23 @@ glm::vec3 Boid::cohesion(vector<Boid> flock) {
 void Boid::behaviour(vector<Boid> flock) {
 
 	// ARE THESE NEEDED?
-//	align(flock);
-//	separation(flock);
-//	cohesion(flock);
+	glm::vec3 aligned = align(flock);
+	glm::vec3 separated = separation(flock);
+	glm::vec3 cohesive = cohesion(flock);
 
-	//acceleration = addVector(acceleration, align(flock));
-	//acceleration = addVector(acceleration, separation(flock));
-	//acceleration = addVector(acceleration, cohesion(flock));
+	aligned = mulVector(aligned, 1);
+	separated = mulVector(aligned, 1);
+	cohesive = mulVector(aligned, 0.5);
+
+	acceleration = addVector(acceleration, aligned);
+	acceleration = addVector(acceleration, separated);
+	acceleration = addVector(acceleration, cohesive);
 }
 
-void Boid::update(const float dt) {
-	glm::vec3 accel;
-	accel.x = acceleration.x * dt;
-	accel.y = acceleration.x * dt;
-	accel.z = acceleration.x * dt;
+void Boid::update() {
+	
 
 	velocity = addVector(velocity, acceleration);
-	float scale = 0.99f;
-	velocity.x = velocity.x * scale;
-	velocity.y = velocity.y * scale;
-	velocity.z = velocity.z * scale;
-
 	position = addVector(position, velocity);
 
 	// Will need to set max velocity here
@@ -171,6 +167,14 @@ glm::vec3 Boid::divVector(glm::vec3 vec, float con) {
 	return result;
 }
 
+glm::vec3 Boid::mulVector(glm::vec3 vec, float con) {
+	glm::vec3 result = glm::vec3((vec.x * con),
+		                         (vec.y * con),
+		                         (vec.z * con)
+	                             );
+	return result;
+}
+
 glm::vec3 Boid::limitVector(glm::vec3 vec, float limit) {
 	
 	glm::vec3 limited = vec;
@@ -201,24 +205,24 @@ glm::vec3 Boid::limitVector(glm::vec3 vec, float limit) {
 
 void Boid::cage() {
 	if (position.x > width) {
-		position.x = 0.0f;
+		velocity.x *= -1;
 	}
 	else if (position.x < 0.0f) {
-		position.x = width;
+		velocity.x *= -1;
 	}
 
 	if (position.y > length) {
-		position.y = 0.0f;
+		velocity.y *= -1;
 	}
 	else if (position.y < 0.0f) {
-		position.y = length;
+		velocity.y *= -1;
 	}
 
 	if (position.z > height) {
-		position.z = 0.0f;
+		velocity.z *= -1;
 	}
 	else if (position.z < 0.0f) {
-		position.z = height;
+		velocity.z *= -1;
 	}
 }
 

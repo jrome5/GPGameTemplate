@@ -4,10 +4,10 @@
 #include "boid.h"
 
 std::vector<Cube> boid_visuals;
-constexpr int number_of_boids = 10;
+constexpr int number_of_boids = 100;
 std::vector<Boid> boids;
-constexpr float MAX_SPEED = 5.0f;
-constexpr float MAX_FORCE = 5.0F;
+constexpr float MAX_SPEED = 1.0f;
+constexpr float MAX_FORCE = 0.5f;
 constexpr float VISION_RADIUS = 5.0f;
 
 int main()
@@ -153,19 +153,18 @@ void updateSceneElements() {
 
 void update(const float current_time)
 {
-	const auto dt = std::min(deltaTime, 0.2f);  //TODO: remove this workaround
-	const float magnitude = 5.0f;
+	
 	for (int i = 0; i < number_of_boids; i++)
 	{
 		Boid& boid = boids[i];
 		auto& visual = boid_visuals[i];
 		boid.behaviour(boids);
-		boid.update(dt);
+		boid.update();
 		boid.cage();
 
 		glm::mat4 mv_matrix_sphere =
 			glm::translate(boid.position) *
-			glm::scale(glm::vec3(0.5f,0.5f,0.5f))*
+			glm::scale(glm::vec3(0.1f,0.1f,0.1f))*
 			glm::mat4(1.0f);
 		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
 		visual.proj_matrix = myGraphics.proj_matrix;
