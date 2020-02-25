@@ -4,11 +4,15 @@
 #include "boid.h"
 
 std::vector<Cube> boid_visuals;
-constexpr int number_of_boids = 100;
+constexpr int number_of_boids = 200;
 std::vector<Boid> boids;
-constexpr float MAX_SPEED = 1.0f;
-constexpr float MAX_FORCE = 0.5f;
-constexpr float VISION_RADIUS = 5.0f;
+constexpr float MAX_SPEED = 0.1f;
+constexpr float MAX_FORCE = 0.05f;
+constexpr float VISION_RADIUS = 2.5f;
+float al = 1.0f;
+float sep = 1.0f;
+float coh = 1.0f;
+float fol = 2.0f;
 
 int main()
 {
@@ -71,15 +75,24 @@ void startup() {
 	myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
 		myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
 		myGraphics.cameraUp);												// up
+
 	// Load Geometry examples
+	//myCube.Load();
+	//myCube.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+
 	myFloor.Load();
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
 	for (int i = 0; i < number_of_boids; i++)
 	{
+
 		Cube s;
 		s.Load();
+		if (i == 0) {
+			s.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+		}
+
 		boid_visuals.push_back(s);
 		Boid b(MAX_SPEED, MAX_FORCE, VISION_RADIUS);
 		boids.push_back(b);
@@ -117,7 +130,7 @@ void updateCamera() {
 	myGraphics.cameraFront = glm::normalize(front);
 
 	// Update movement using the keys
-	GLfloat cameraSpeed = 1.0f * deltaTime;
+	GLfloat cameraSpeed = 10.0f * deltaTime;
 	if (keyStatus[GLFW_KEY_W]) myGraphics.cameraPosition += cameraSpeed * myGraphics.cameraFront;
 	if (keyStatus[GLFW_KEY_S]) myGraphics.cameraPosition -= cameraSpeed * myGraphics.cameraFront;
 	if (keyStatus[GLFW_KEY_A]) myGraphics.cameraPosition -= glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
@@ -148,19 +161,52 @@ void updateSceneElements() {
 		glm::mat4(1.0f);
 	myFloor.proj_matrix = myGraphics.proj_matrix;
 
+	// Calculate Cube position
+	//glm::mat4 mv_matrix_cube =
+	//	glm::translate(glm::vec3(10.0f, 10.0f, 10.0f)) *
+	//	glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
+	//	glm::mat4(1.0f);
+	//myCube.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
+	//myCube.proj_matrix = myGraphics.proj_matrix;
+
+
+
+
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 }
 
 void update(const float current_time)
 {
-	
+	if (keyStatus[GLFW_KEY_U]) al += 0.1f;
+	if (keyStatus[GLFW_KEY_J]) al -= 0.1f;
+	if (keyStatus[GLFW_KEY_I]) sep += 0.1f;
+	if (keyStatus[GLFW_KEY_K]) sep -= 0.1f;
+	if (keyStatus[GLFW_KEY_O]) coh += 0.1f;
+	if (keyStatus[GLFW_KEY_L]) coh -= 0.1f;
+
+	const float dt = std::min(deltaTime, 1.0f);
 	for (int i = 0; i < number_of_boids; i++)
 	{
 		Boid& boid = boids[i];
 		auto& visual = boid_visuals[i];
-		boid.behaviour(boids);
-		boid.update();
-		boid.cage();
+		boid.behaviour(boids, boids[0].position , al, sep, coh, fol);
+		//boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fol);
+
+		//boid.cageJack();
+		boid.cageShayne();
+		boid.update(dt);
+		
+
+		if (i == 0) {
+
+			glm::mat4 mv_matrix_sphere =
+				glm::translate(boid.position) *
+				glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) *
+				glm::mat4(1.0f);
+			visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
+			visual.proj_matrix = myGraphics.proj_matrix;
+
+		}
 
 		glm::mat4 mv_matrix_sphere =
 			glm::translate(boid.position) *
@@ -175,7 +221,9 @@ void renderScene() {
 	// Clear viewport - start a new frame.
 	myGraphics.ClearViewport();
 	myFloor.Draw();
-	for (auto& boid : boid_visuals)
+	//myCube.Draw();
+
+	for (auto & boid : boid_visuals)
 	{
 		boid.Draw();
 	}
@@ -200,6 +248,10 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 	if (keyStatus[GLFW_KEY_M]) {
 		mouseEnabled = !mouseEnabled;
 		myGraphics.ToggleMouse();
+		cout << "al: " << al << std::endl;
+		cout << "sep: " << sep << std::endl;
+		cout << "coh: " << coh << std::endl;
+
 	}
 	// If exit key pressed.
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)

@@ -49,20 +49,27 @@ public:
 	*/
 	glm::vec3 cohesion(vector<Boid> flock);
 
+	/* Steers boids towards the master position
+	*/
+	glm::vec3 follow(vector<Boid> flock, glm::vec3 master);
 
 	/* Implements the three rules, align, separation and cohesion
 	*/
-	void behaviour(vector<Boid> flock);
+	void behaviour(vector<Boid> flock, glm::vec3 master, const float al, const float sep, const float coh, const float fol);
 
 
 	/* Updates the properties of the boid, position, velocity...etc
 	*/
-	void update();
+	void update(const float dt);
 
 
 	/* Keeps the boid within the boundaries of a virtual cage
 	*/
-	void cage();
+	void cageJack();
+
+	/* Keeps the boid within the boundaries of a virtual cage
+	*/
+	void cageShayne();
 
 
 	/* Calculates the distance between two vectors
@@ -92,5 +99,9 @@ public:
 	*  If an element exceeds the limit, it will be set to the limit.
 	*/
 	glm::vec3 limitVector(glm::vec3 vec, float limit);
+
+	/* Normailse a vector
+	*/
+	glm::vec3 normVector(glm::vec3 vec);
 };
 
