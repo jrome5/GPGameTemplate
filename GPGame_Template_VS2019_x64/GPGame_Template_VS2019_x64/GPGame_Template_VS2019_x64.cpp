@@ -1,9 +1,10 @@
 #include "GP_Template.h"
-#include "bounding_box.h"
+#include <algorithm>
 
-
-BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
-
+BoundingBox cube1({ 3.0f, 5.0f, 3.0f }, 5, 0);
+BoundingBox cube2({ 3.0f, 3.0f, 5.0f }, 5, 1);
+BoundingBox myFloor({ 0.0f, 0.0f, 0.0f }, 1000.0f, 2);
+std::vector<BoundingBox> b_boxes;
 int main()
 {
 	int errorGraphics = myGraphics.Init();			// Launch window and graphics context
@@ -15,12 +16,9 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-	
+		updateCamera();
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
-
-		const float current_time = float(glfwGetTime());
-		update(current_time);
 		// Render a still frame into an off-screen frame buffer known as the backbuffer.
 		renderScene();
 
@@ -57,25 +55,124 @@ void startup() {
 	myGraphics.proj_matrix = glm::perspective(glm::radians(50.0f), myGraphics.aspect, 0.1f, 1000.0f);
 
 	//camera (constants set)
-	myGraphics.cameraPitch = -72.0f;
-	myGraphics.cameraYaw = -89.0f;
-	myGraphics.cameraPosition = glm::vec3(4.32f, 12.74f, 0.66f);
-	myGraphics.cameraFront = glm::vec3(0.000462104f, -0.964326f, 0.264716f);
+	//myGraphics.cameraPitch = -72.0f;
+	//myGraphics.cameraYaw = -89.0f;
+	//myGraphics.cameraPosition = glm::vec3(4.32f, 12.74f, 0.66f);
+	//myGraphics.cameraFront = glm::vec3(0.000462104f, -0.964326f, 0.264716f);
 	myGraphics.cameraUp = glm::vec3(0, 1, 0);
 	myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
 		myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
 		myGraphics.cameraUp);												// up
 	// Load Geometry examples
-	myFloor.Load();
-	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
-	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
+	myFloor.visual.Load();
+	myFloor.visual.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
+	myFloor.visual.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
+	myFloor.setScale(1000.f, 0.005f, 1000.0f);
+	myFloor.is_static = true;
 
 	//BoundingBox
-	b.visual.Load();
+	cube1.visual.Load();
+	cube1.visual.fillColor = glm::vec4(0.5f, 0.5f, 0.9f, 1.0f);
+	cube1.setScale(1.0f, 1.0f, 1.0f);
+	cube2.visual.Load();
+	cube2.setScale(1.0f, 1.0f, 1.0f);
 
+	//Add b boxes to vector
+	b_boxes.push_back(myFloor);
+	b_boxes.push_back(cube1);
+	b_boxes.push_back(cube2);
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
+}
+
+void updateCamera() {
+
+	// calculate movement for FPS camera
+	GLfloat xoffset = myGraphics.mouseX - myGraphics.cameraLastX;
+	GLfloat yoffset = myGraphics.cameraLastY - myGraphics.mouseY;    // Reversed mouse movement
+	myGraphics.cameraLastX = (GLfloat)myGraphics.mouseX;
+	myGraphics.cameraLastY = (GLfloat)myGraphics.mouseY;
+
+	GLfloat sensitivity = 0.05f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	myGraphics.cameraYaw += xoffset;
+	myGraphics.cameraPitch += yoffset;
+
+	// check for pitch out of bounds otherwise screen gets flipped
+	if (myGraphics.cameraPitch > 89.0f) myGraphics.cameraPitch = 89.0f;
+	if (myGraphics.cameraPitch < -89.0f) myGraphics.cameraPitch = -89.0f;
+
+	// Calculating FPS camera movement (See 'Additional Reading: Yaw and Pitch to Vector Calculations' in VISION)
+	glm::vec3 front;
+	front.x = cos(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
+	front.y = sin(glm::radians(myGraphics.cameraPitch));
+	front.z = sin(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
+
+	myGraphics.cameraFront = glm::normalize(front);
+
+	// Update movement using the keys
+	GLfloat cameraSpeed = 1.0f * deltaTime;
+	if (keyStatus[GLFW_KEY_W]) myGraphics.cameraPosition += cameraSpeed * myGraphics.cameraFront;
+	if (keyStatus[GLFW_KEY_S]) myGraphics.cameraPosition -= cameraSpeed * myGraphics.cameraFront;
+	if (keyStatus[GLFW_KEY_A]) myGraphics.cameraPosition -= glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
+	if (keyStatus[GLFW_KEY_D]) myGraphics.cameraPosition += glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
+
+	// IMPORTANT PART
+	// Calculate my view matrix using the lookAt helper function
+	if (mouseEnabled) {
+		myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
+			myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
+			myGraphics.cameraUp);												// up
+	}
+}
+
+inline glm::vec3 mulVector(glm::vec3 v1, float m)
+{
+	glm::vec3 v2;
+	v2.x = v1.x * m;
+	v2.y = v1.y * m;
+	v2.z = v1.z * m;
+	return v2;
+}
+
+
+inline glm::vec3 limitVector(glm::vec3 v1, float m)
+{
+	glm::vec3 v2;
+	v2.x = (abs(v1.x) < m) ? 0.0f : v1.x;
+	v2.y = (abs(v1.y) < m) ? 0.0f : v1.y;
+	v2.z = (abs(v1.z) < m) ? 0.0f : v1.z;
+	return v2;
+}
+
+
+void calculateResponse(BoundingBox& b1, BoundingBox& b2)
+{
+	const float velocity_cutoff = 0.05f; //stop vibration due to bouncing at low velocity
+	glm::vec3 v1;
+	glm::vec3 v2;
+	auto m1 = b1.mass;
+	auto m2 = b2.mass;
+	auto u1 = b1.velocity;
+	auto u2 = b2.velocity;
+	if (not b1.is_static)
+	{
+		v1 = ((m1 - m2) / (m1 + m2)) * u1 + (2 * m2 / (m1 + m2)) * u2;
+		v1 = mulVector(v1, b2.friction);
+		//v1 = limitVector(v1, velocity_cutoff);
+		b1.velocity = v1;
+	}
+	if (not b2.is_static)
+	{
+		v2 = ((m2 - m1) / (m1 + m2)) * u2 + (2 * m1 / (m1 + m2)) * u1;
+		v2 = mulVector(v2, b1.friction);
+		//v2 = limitVector(v2, velocity_cutoff);
+		b2.velocity = v2;
+	}
+	//momentum calculations
 }
 
 void updateSceneElements() {
@@ -86,54 +183,52 @@ void updateSceneElements() {
 	GLfloat currentTime = (GLfloat)glfwGetTime();    // retrieve timelapse
 	deltaTime = currentTime - lastTime;                // Calculate delta time
 	lastTime = currentTime;                            // Save for next frame calculations.
-		
-	// Calculate floor position and resize
-	myFloor.mv_matrix = myGraphics.viewMatrix *
-		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
-		glm::scale(glm::vec3(1000.0f, 0.001f, 1000.0f)) *
-		glm::mat4(1.0f);
-	myFloor.proj_matrix = myGraphics.proj_matrix;
+	
+	const float dt = std::min(deltaTime, 0.2f);
+
+	for (auto& b : b_boxes)
+	{
+		if (not b.is_static)
+		{
+			const auto force = b.calculateForce(gravity);
+			const auto acceleration = b.calculateAcceleration(force);
+			b.calculateVelocity(acceleration, dt);
+		}
+		for (auto& b2 : b_boxes)
+		{
+			if (b.id == b2.id)
+				continue;
+			else if (isCollision(b.aabb, b2.aabb))
+			{
+				calculateResponse(b, b2);
+				updateBoundingBox(b2);
+			}
+		}
+		updateBoundingBox(b);
+	}
 
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 }
 
-void update(const float current_time)
+void updateBoundingBox(BoundingBox& b)
 {
-	const float dt = current_time - previous_time;
-	previous_time = current_time;
-
-	if (b.position.y > b.scale.y)
-	{
-		const auto force = b.calculateForce(gravity);
-		const auto acceleration = b.calculateAcceleration(force);
-		b.calculateVelocity(acceleration, dt);
-		b.calculatePosition(b.velocity, dt);
-	}
-	else
-	{
-		//inverse momentum on collision with ground
-		const float drag = 0.6;
-		b.velocity.y = -1*b.velocity.y * drag;
-		b.calculatePosition(b.velocity, dt);
-	}
-
-
+	const float dt = std::min(deltaTime, 0.2f);
+	b.calculatePosition(b.velocity, dt);
+	b.setPosition(b.position);
 	//check if bounding box visuals
 	glm::mat4 mv_matrix_cube =
 		glm::translate(b.position) *
+		glm::scale(b.scale)*
 		glm::mat4(1.0f);
 	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 	b.visual.proj_matrix = myGraphics.proj_matrix;
-
 }
 
 void renderScene() {
 	// Clear viewport - start a new frame.
 	myGraphics.ClearViewport();
-	myFloor.Draw();
-	// Draw objects in screen
-	b.visual.Draw();
-
+	for (auto& v : b_boxes)
+		v.visual.Draw();
 }
 
 // CallBack functions low level functionality.

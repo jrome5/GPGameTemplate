@@ -26,11 +26,12 @@ using namespace std;
 #include <glm/gtx/transform.hpp>
 #include "graphics.h"
 #include "shapes.h"
+#include "bounding_box.h"
 
 // MAIN FUNCTIONS
 void startup();
-//void updateCamera();
-void update(const float current_time);
+void updateCamera();
+void updateBoundingBox(BoundingBox& b);
 void updateSceneElements();
 void renderScene();
 
@@ -51,16 +52,6 @@ float		previous_time = 0.0f;
 
 // MAIN GRAPHICS OBJECT
 Graphics    myGraphics;        // Runing all the graphics in this object
-
-// DEMO OBJECTS
-Cube        myCube;
-Sphere      mySphere;
-Arrow       arrowX;
-Arrow       arrowY;
-Arrow       arrowZ;
-Cube        myFloor;
-Line        myLine;
-Cylinder    myCylinder;
 
 // Some global variable to do the animation.
 float t = 0.001f;            // Global variable for animation

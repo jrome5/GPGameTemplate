@@ -56,10 +56,10 @@ bool isCollision(const AABB a, const AABB b)
         zOverlap = false;
 
     anyOverlap = xOverlap && yOverlap && zOverlap;
-    if (anyOverlap)
+  /*  if (anyOverlap)
         for (int i = 0; i < 3; i++)
         {
             cout << a.c[i] << " " << b.c[i] << "\n" << a.r[i] << " " << b.r[i] << "\n";
-        }
+        }*/
     return anyOverlap;
 };
