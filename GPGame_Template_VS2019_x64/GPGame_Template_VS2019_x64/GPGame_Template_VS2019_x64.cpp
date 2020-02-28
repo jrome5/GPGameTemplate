@@ -184,7 +184,7 @@ void updateCamera() {
 	myGraphics.cameraFront = glm::normalize(front);
 
 	// Update movement using the keys
-	GLfloat cameraSpeed = 1.0f * deltaTime;
+	GLfloat cameraSpeed = 10.0f * deltaTime;
 	if (keyStatus[GLFW_KEY_W]) myGraphics.cameraPosition += cameraSpeed * myGraphics.cameraFront;
 	if (keyStatus[GLFW_KEY_S]) myGraphics.cameraPosition -= cameraSpeed * myGraphics.cameraFront;
 	if (keyStatus[GLFW_KEY_A]) myGraphics.cameraPosition -= glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
@@ -262,7 +262,23 @@ void updateSceneElements() {
 	myCylinder.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(-1.0f, 0.5f, 2.0f)) *
 		glm::mat4(1.0f);
+
+	myCylinder.mv_matrix[0][0] = 1.0f;
+	myCylinder.mv_matrix[0][1] = 0.0f;
+	myCylinder.mv_matrix[0][2] = 0.0f;
+
+	//myCylinder.mv_matrix[1][0] = 0.0f;
+	//myCylinder.mv_matrix[1][1] = -1.0f;
+	//myCylinder.mv_matrix[1][2] = 0.0f;
+
+	myCylinder.mv_matrix[2][0] = 0.0f;
+	myCylinder.mv_matrix[2][1] = 0.0f;
+	myCylinder.mv_matrix[2][2] = 1.0f;
+
 	myCylinder.proj_matrix = myGraphics.proj_matrix;
+
+
+
 
 	// Calculate Line
 	myLine.mv_matrix = myGraphics.viewMatrix *
@@ -270,11 +286,27 @@ void updateSceneElements() {
 		glm::mat4(1.0f);
 	myLine.proj_matrix = myGraphics.proj_matrix;
 
+	// BILLBOARDS
+	// Get camera position
+
 	// Calculate Plane
 	myPlane.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(1.0f, 3.0f, 1.0f)) *
 		glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) *
 		glm::mat4(1.0f);
+
+	myPlane.mv_matrix[0][0] = 1.0f;
+	myPlane.mv_matrix[0][1] = 0.0f;
+	myPlane.mv_matrix[0][2] = 0.0f;
+
+	myPlane.mv_matrix[1][0] = 0.0f;
+	myPlane.mv_matrix[1][1] = -1.0f;
+	myPlane.mv_matrix[1][2] = 0.0f;
+
+	myPlane.mv_matrix[2][0] = 0.0f;
+	myPlane.mv_matrix[2][1] = 0.0f;
+	myPlane.mv_matrix[2][2] = 1.0f;
+
 	myPlane.proj_matrix = myGraphics.proj_matrix;
 
 	// Calculate Triangle
