@@ -29,7 +29,8 @@ using namespace std;
 
 // MAIN FUNCTIONS
 void startup();
-void updateCamera();
+//void updateCamera();
+void update(const float current_time);
 void updateSceneElements();
 void renderScene();
 
@@ -42,12 +43,15 @@ void onMouseWheelCallback(GLFWwindow* window, double xoffset, double yoffset);
 void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z);
 void createMaze();
 
+void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z);
+
 // VARIABLES
 bool        quit = false;
 float       deltaTime = 0.0f;    // Keep track of time per frame.
 float       lastTime = 0.0f;    // variable to keep overall time.
 bool        keyStatus[1024];    // Hold key status.
 bool		mouseEnabled = true; // keep track of mouse toggle.
+float		previous_time = 0.0f;
 
 // MAIN GRAPHICS OBJECT
 Graphics    myGraphics;        // Runing all the graphics in this object
