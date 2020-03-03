@@ -1,5 +1,5 @@
 #pragma once
-
+#include "AABB.h"
 #include <iostream>
 #include <cmath>
 #include <vector>
@@ -15,7 +15,7 @@ class Boid {
 
 public:
 
-	Boid(float maxS, float maxF, float vis);
+	Boid(float maxS, float maxF, float vis, float size, int i);
 	~Boid();
 
 
@@ -26,12 +26,10 @@ public:
 	glm::vec3  acceleration;
 	float     maxSpeed;
 	float     maxForce;
-	float     visionRadius;
+	float	  bounds;
 
-	float width;
-	float length;
-	float height;
-
+	AABB bounding_box;
+	int id;
 
 	// METHODS
 
@@ -62,6 +60,7 @@ public:
 	*/
 	void update(const float dt);
 
+	void limitVelocity(glm::vec3& v, float limit);
 
 	/* Keeps the boid within the boundaries of a virtual cage
 	*/

@@ -4,15 +4,18 @@
 #include "boid.h"
 
 std::vector<Cube> boid_visuals;
-constexpr int number_of_boids = 200;
+Cube container;
+constexpr int number_of_boids = 150;
 std::vector<Boid> boids;
-constexpr float MAX_SPEED = 0.1f;
-constexpr float MAX_FORCE = 0.05f;
-constexpr float VISION_RADIUS = 2.5f;
-float al = 1.0f;
+constexpr float CONTAINER_SIZE = 5.0f;
+constexpr float MAX_SPEED = 0.05f;
+constexpr float MAX_FORCE = 0.01f;
+constexpr float VISION_RADIUS = 0.75f;
+constexpr float BOID_SIZE = 0.1f;
+float al =  1.0f;
 float sep = 1.0f;
 float coh = 1.0f;
-float fol = 2.0f;
+float fol = 0.0f;
 
 int main()
 {
@@ -84,6 +87,10 @@ void startup() {
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
+	container.Load();
+	container.fillColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	container.lineColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);    // Sand again
+
 	for (int i = 0; i < number_of_boids; i++)
 	{
 
@@ -94,7 +101,7 @@ void startup() {
 		}
 
 		boid_visuals.push_back(s);
-		Boid b(MAX_SPEED, MAX_FORCE, VISION_RADIUS);
+		Boid b(MAX_SPEED, MAX_FORCE, VISION_RADIUS, CONTAINER_SIZE, i);
 		boids.push_back(b);
 	}
 
@@ -161,6 +168,12 @@ void updateSceneElements() {
 		glm::mat4(1.0f);
 	myFloor.proj_matrix = myGraphics.proj_matrix;
 
+	container.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(CONTAINER_SIZE/2, CONTAINER_SIZE/2, CONTAINER_SIZE/2)) *
+		glm::scale(glm::vec3(CONTAINER_SIZE, CONTAINER_SIZE, CONTAINER_SIZE)) *
+		glm::mat4(1.0f);
+	container.proj_matrix = myGraphics.proj_matrix;
+
 	// Calculate Cube position
 	//glm::mat4 mv_matrix_cube =
 	//	glm::translate(glm::vec3(10.0f, 10.0f, 10.0f)) *
@@ -187,12 +200,12 @@ void update(const float current_time)
 	const float dt = std::min(deltaTime, 1.0f);
 	for (int i = 0; i < number_of_boids; i++)
 	{
-		Boid& boid = boids[i];
+		auto& boid = boids[i];
 		auto& visual = boid_visuals[i];
 		boid.behaviour(boids, boids[0].position , al, sep, coh, fol);
 		//boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fol);
 
-		//boid.cageJack();
+	//	boid.cageJack();
 		boid.cageShayne();
 		boid.update(dt);
 		
@@ -201,7 +214,7 @@ void update(const float current_time)
 
 			glm::mat4 mv_matrix_sphere =
 				glm::translate(boid.position) *
-				glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) *
+				glm::scale(glm::vec3(BOID_SIZE, BOID_SIZE, BOID_SIZE)) *
 				glm::mat4(1.0f);
 			visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
 			visual.proj_matrix = myGraphics.proj_matrix;
@@ -210,7 +223,7 @@ void update(const float current_time)
 
 		glm::mat4 mv_matrix_sphere =
 			glm::translate(boid.position) *
-			glm::scale(glm::vec3(0.1f,0.1f,0.1f))*
+			glm::scale(glm::vec3(BOID_SIZE,BOID_SIZE,BOID_SIZE))*
 			glm::mat4(1.0f);
 		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
 		visual.proj_matrix = myGraphics.proj_matrix;
@@ -222,11 +235,12 @@ void renderScene() {
 	myGraphics.ClearViewport();
 	myFloor.Draw();
 	//myCube.Draw();
-
 	for (auto & boid : boid_visuals)
 	{
 		boid.Draw();
 	}
+	container.Draw();
+
 }
 
 // CallBack functions low level functionality.
