@@ -30,8 +30,8 @@ public:
 		visual.fillColor = glm::vec4(0.0, 0.0, 0.0, 1.0);
 		visual.lineColor = glm::vec4(0.2f, 0.2, 0.2, 1.0);
 		visual.lineWidth = 5.0f;
-		aabb.c = Point{ position.x, position.y, position.z };
-		aabb.r = Point{ 1.0f, 1.0f, 1.0f };
+		aabb.c = glm::vec3{ position.x, position.y, position.z };
+		aabb.r = glm::vec3{ 1.0f, 1.0f, 1.0f };
 		id = identifier;
 	}
 
@@ -50,12 +50,12 @@ public:
 		scale.x = x;
 		scale.y = y;
 		scale.z = z;
-		aabb.r = Point{ x / 2, y / 2, z / 2 };
+		aabb.r = glm::vec3{ x / 2, y / 2, z / 2 };
 	}
 
 	void setPosition(const glm::vec3& pos)
 	{
-		aabb.c = Point{ pos.x, pos.y, pos.z };
+		aabb.c = pos;
 	}
 
 	void calculateResponse(BoundingBox& b2)

@@ -4,6 +4,7 @@
 #include "graph.h"
 #include "Astar.h"
 #include "bounding_box.h"
+#include "boid.h"
 
 constexpr int ROWS = 20;
 constexpr int COLS = 20;
@@ -61,6 +62,22 @@ BoundingBox cube1({ 18.0f, 3.0f, 3.0f }, 2.0f, 0);
 BoundingBox cube2({ 18.0f, 12.0f, 4.1f }, 5.0f, 1);
 std::vector<BoundingBox> b_boxes;
 
+//BOIDS_DEMO
+std::vector<Cube> boid_visuals;
+Cube container;
+constexpr int number_of_boids = 150;
+std::vector<Boid> boids;
+constexpr float CONTAINER_SIZE = 5.0f;
+constexpr float MAX_SPEED = 0.05f;
+constexpr float MAX_FORCE = 0.01f;
+constexpr float VISION_RADIUS = 0.25f;
+constexpr float BOID_SIZE = 0.05f;
+float al = 1.0f;
+float sep = 1.0f;
+float coh = 1.0f;
+float fol = 0.0f;
+
+
 int main()
 {
 	int errorGraphics = myGraphics.Init();			// Launch window and graphics context
@@ -106,8 +123,8 @@ wall makeOuterWall(const glm::vec3 pos)
 	w.pos = pos;
 	w.visual = c;
 	AABB aabb;
-	aabb.c = Point(pos.x, pos.y, pos.z);
-	aabb.r = Point{ 0.5f, 0.5f, 0.5f };
+	aabb.c = pos;
+	aabb.r = glm::vec3{ 0.5f, 0.5f, 0.5f };
 	w.aabb = aabb;
 	return w;
 }
@@ -154,6 +171,26 @@ void startup() {
 	b_boxes.push_back(cube1);
 	b_boxes.push_back(cube2);
 
+	//BOIDS
+	container.Load();
+	container.fillColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+	container.lineColor = glm::vec4(1.0f, 1.0f, 1.0f, 1.0f);    // Sand again
+
+	for (int i = 0; i < number_of_boids; i++)
+	{
+
+		Cube s;
+		s.Load();
+		if (i == 0) {
+			s.fillColor = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+		}
+
+		boid_visuals.push_back(s);
+		Boid b(MAX_SPEED, MAX_FORCE, VISION_RADIUS, CONTAINER_SIZE, i);
+		boids.push_back(b);
+	}
+	
+	//maze
 	active_cell.Load();
 	active_cell.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 0.75f);
 	active_cell.lineColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
@@ -169,9 +206,9 @@ void startup() {
 		path_visuals.push_back(c);
 	}
 
-	camera_aabb.r = Point(myGraphics.cameraPosition.x, myGraphics.cameraPosition.y, myGraphics.cameraPosition.z);
+	camera_aabb.c = myGraphics.cameraPosition;
 	const float player_size = 0.25f;
-	camera_aabb.r = Point(player_size, player_size, player_size);
+	camera_aabb.r = glm::vec3(player_size, player_size, player_size);
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
@@ -198,8 +235,8 @@ void createMaze()
 				w.visual = c;
 				w.pos = pos;
 				AABB aabb;
-				aabb.c = Point(pos.x, pos.y, pos.z);
-				aabb.r = Point(0.5f, 0.5f, 0.5f);
+				aabb.c = pos;
+				aabb.r = glm::vec3(0.5f, 0.5f, 0.5f);
 				w.aabb = aabb;
 				inner_walls.push_back(w);
 			}
@@ -299,7 +336,7 @@ void updateCamera() {
 	if (keyStatus[GLFW_KEY_D]) next_pos += glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
 	
 	next_pos.y = 0.5f; //fixed height;
-	camera_aabb.c = Point(next_pos.x, next_pos.y, next_pos.z);
+	camera_aabb.c = next_pos;
 
 	bool collision = false;
 	for (auto wall : inner_walls)
@@ -337,7 +374,7 @@ void updateCamera() {
 	}
 	else
 	{
-		camera_aabb.c = Point{ myGraphics.cameraPosition.x, myGraphics.cameraPosition.y, myGraphics.cameraPosition.z };
+		camera_aabb.c = myGraphics.cameraPosition;
 	}
 
 	// IMPORTANT PART
@@ -481,7 +518,52 @@ void updateSceneElements() {
 
 void updateBoidsDemo() 
 {
-	std::cout << "Me and the boids having a demo" << std::endl;
+	//std::cout << "Me and the boids having a demo" << std::endl;
+	if (keyStatus[GLFW_KEY_U]) al += 0.1f;
+	if (keyStatus[GLFW_KEY_J]) al -= 0.1f;
+	if (keyStatus[GLFW_KEY_I]) sep += 0.1f;
+	if (keyStatus[GLFW_KEY_K]) sep -= 0.1f;
+	if (keyStatus[GLFW_KEY_O]) coh += 0.1f;
+	if (keyStatus[GLFW_KEY_L]) coh -= 0.1f;
+
+	const float dt = std::min(deltaTime, 1.0f);
+	for (int i = 0; i < number_of_boids; i++)
+	{
+		auto& boid = boids[i];
+		auto& visual = boid_visuals[i];
+		boid.behaviour(boids, boids[0].position, al, sep, coh, fol);
+		//boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fol);
+
+	//	boid.cageJack();
+		boid.cageShayne();
+		boid.update(dt);
+
+
+		if (i == 0) {
+
+			glm::mat4 mv_matrix_sphere =
+				glm::translate(boid.position) *
+				glm::scale(glm::vec3(BOID_SIZE, BOID_SIZE, BOID_SIZE)) *
+				glm::mat4(1.0f);
+			visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
+			visual.proj_matrix = myGraphics.proj_matrix;
+
+		}
+
+		glm::mat4 mv_matrix_sphere =
+			glm::translate(boid.position) *
+			glm::scale(glm::vec3(BOID_SIZE, BOID_SIZE, BOID_SIZE)) *
+			glm::mat4(1.0f);
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
+		visual.proj_matrix = myGraphics.proj_matrix;
+	}
+
+	container.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(3.0f, CONTAINER_SIZE/2, 3.0f)) *
+		glm::scale(glm::vec3(CONTAINER_SIZE, CONTAINER_SIZE, CONTAINER_SIZE)) *
+		glm::mat4(1.0f);
+	container.proj_matrix = myGraphics.proj_matrix;
+
 };
 void updatePhysicsDemo() 
 {
@@ -555,6 +637,11 @@ void renderScene() {
 		case PARTICLE_DEMO.second:
 			break;
 		case BOIDS_DEMO.second:
+			for (auto& boid : boid_visuals)
+			{
+				boid.Draw();
+			}
+			container.Draw();
 			break;
 		default:
 			break;
