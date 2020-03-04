@@ -65,12 +65,10 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-	
+		updateCamera();
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
 
-		const float current_time = float(glfwGetTime());
-		update(current_time);
 		// Render a still frame into an off-screen frame buffer known as the backbuffer.
 		renderScene();
 
@@ -130,7 +128,7 @@ void startup() {
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
-  active_cell.Load();
+	active_cell.Load();
 	active_cell.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 0.75f);
 	active_cell.lineColor = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
 	

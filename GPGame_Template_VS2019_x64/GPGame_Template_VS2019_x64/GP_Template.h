@@ -29,8 +29,7 @@ using namespace std;
 
 // MAIN FUNCTIONS
 void startup();
-//void updateCamera();
-void update(const float current_time);
+void updateCamera();
 void updateSceneElements();
 void renderScene();
 
@@ -40,10 +39,7 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 void onMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void onMouseMoveCallback(GLFWwindow* window, double x, double y);
 void onMouseWheelCallback(GLFWwindow* window, double xoffset, double yoffset);
-void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z);
 void createMaze();
-
-void moveCharacter(const GLfloat x, const GLfloat y, const GLfloat z);
 
 // VARIABLES
 bool        quit = false;
