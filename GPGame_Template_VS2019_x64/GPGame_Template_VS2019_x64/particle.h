@@ -10,17 +10,17 @@ typedef struct Particle
 		position = p;
 		emitter_position = p;
 		mass = m;
-		lifetime = physics::getRandomFloat(10.0);
-		velocity = glm::vec3(physics::getRandomFloat(4.0)-2, 2.0f, physics::getRandomFloat(4.0) - 2);
-		trans = 1.0f;
-		colour = glm::vec4(0.0f, 0.0f, 0.0f, trans);
+		lifetime = physics::getRandomFloat(3.0);
+		velocity = glm::vec3(0.0f, 4.0f, 0.0f);
+		decay = 1.0f;
+		colour = glm::vec4(0.0f, 0.0f, 0.0f, decay);
 	
 	};
 
 	float mass = 1.0f;
 	float lifetime = 0.0f;
 	float age = 0.0f;
-	float trans = 1.0f;
+	float decay = 1.0f;
 
 	glm::vec3 emitter_position;
 	glm::vec3 position;
@@ -30,29 +30,26 @@ typedef struct Particle
 	bool checkExpired(const float dt)
 	{
 		age += dt;
-		if (lifetime < age)
+		//if (lifetime < age)
 		{
-			lifetime = physics::getRandomFloat(10.0);
-			age = 0.0f;
-			position = emitter_position;
-			velocity = { 0.0, 2.0f, 0.0f };
-			return true;
+			//lifetime = physics::getRandomFloat(3.0);
+			//age = 0.0f;
+			//position = emitter_position;
+			//velocity = { 0.0, 2.0f, 0.0f };
+			//return true;
 		}
+
 		return false;
 	}
 
-	void resetPosition()
+	void resetPosition()   // NEED TO CALL THIS SOMEWHERE TO FIRE MORE FIREWORKS
 	{
 		position = emitter_position;
-		velocity = glm::vec3(0.0f, 1.0f, 0.0f);
-		trans = 1.0f;                              // Is this needed ???
+		velocity = glm::vec3(0.0f, 5.0f, 0.0f);
+		decay = 1.0f;                             
 		return;
 	}
 
-	float getRandColor() 
-	{
-		//return 
-	}
 };
 
 class Emitter
