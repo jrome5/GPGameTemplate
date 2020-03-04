@@ -66,17 +66,18 @@ std::vector<BoundingBox> b_boxes;
 //BOIDS_DEMO
 std::vector<Cube> boid_visuals;
 Cube container;
-constexpr int number_of_boids = 150;
+constexpr int number_of_boids = 200;
 std::vector<Boid> boids;
-constexpr float CONTAINER_SIZE = 5.0f;
-constexpr float MAX_SPEED = 0.05f;
-constexpr float MAX_FORCE = 0.01f;
-constexpr float VISION_RADIUS = 0.25f;
-constexpr float BOID_SIZE = 0.05f;
+constexpr glm::vec3 CONTAINER_SIZE(5.0f, 2.5f, 5.0f);
+constexpr float MAX_SPEED = 0.1f;
+constexpr float VISION_RADIUS = 0.15f;
+constexpr float BOID_SIZE = 0.025f;
 float al = 1.0f;
 float sep = 1.0f;
 float coh = 1.0f;
-float fol = 0.0f;
+float fol = 1.0f;
+constexpr glm::vec3 CAGE_POSITION(3.0f, CONTAINER_SIZE.y / 2, 3.0f);
+
 
 //PARTICLE DEMO
 Cube emitter_visual;
@@ -202,7 +203,7 @@ void startup() {
 		}
 
 		boid_visuals.push_back(s);
-		Boid b(MAX_SPEED, MAX_FORCE, VISION_RADIUS, CONTAINER_SIZE, i);
+		Boid b(MAX_SPEED, VISION_RADIUS, CAGE_POSITION, CONTAINER_SIZE, i);
 		boids.push_back(b);
 	}
 	
@@ -547,13 +548,10 @@ void updateBoidsDemo()
 	{
 		auto& boid = boids[i];
 		auto& visual = boid_visuals[i];
-		boid.behaviour(boids, boids[0].position, al, sep, coh, fol);
-		//boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fol);
-
-	//	boid.cageJack();
-		boid.cageShayne();
+		//boid.behaviour(boids, boids[0].position, al, sep, coh, fol);
+		boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fol);
+		boid.cage();
 		boid.update(dt);
-
 
 		if (i == 0) {
 
@@ -575,8 +573,8 @@ void updateBoidsDemo()
 	}
 
 	container.mv_matrix = myGraphics.viewMatrix *
-		glm::translate(glm::vec3(3.0f, CONTAINER_SIZE/2, 3.0f)) *
-		glm::scale(glm::vec3(CONTAINER_SIZE, CONTAINER_SIZE, CONTAINER_SIZE)) *
+		glm::translate(CAGE_POSITION) *
+		glm::scale(CONTAINER_SIZE) *
 		glm::mat4(1.0f);
 	container.proj_matrix = myGraphics.proj_matrix;
 
@@ -737,6 +735,7 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 
 	// toggle showing mouse.
 	if (keyStatus[GLFW_KEY_M]) {
+		std::cout << "coh: "<< coh << std::endl;
 		mouseEnabled = !mouseEnabled;
 		myGraphics.ToggleMouse();
 	}

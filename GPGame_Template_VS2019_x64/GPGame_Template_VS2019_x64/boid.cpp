@@ -5,24 +5,28 @@ inline float getRandomFloat(const float upper, const float offset = 0)
 	return static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / upper)) + offset;
 }
 
-Boid::Boid(float maxS, float maxF, float vis, float size, int i) : bounds(size) {
+Boid::Boid(float maxS, float vis, glm::vec3 cage_position, glm::vec3 size, int i) {
 	// Virtual cage dimensions
-
 	const float vel_magnitude = 0.5f;
 	velocity.x = getRandomFloat(vel_magnitude, -vel_magnitude / 2);
 	velocity.y = getRandomFloat(vel_magnitude, -vel_magnitude / 2);
 	velocity.z = getRandomFloat(vel_magnitude, -vel_magnitude / 2);
 
 	acceleration = glm::vec3(0.0f, 0.0f, 0.0f);
-	position.x = 2.0f + getRandomFloat(bounds);
-	position.y = getRandomFloat(bounds);
-	position.z = 2.0f + getRandomFloat(bounds);
 
-	maxSpeed = maxS;
-	maxForce = maxF;
-	id = i;
-	bounding_box.c = glm::vec3{ position.x, position.y, position.z };
+	bounds.x = cage_position.x + size.x/2;
+	bounds.y = cage_position.y + size.y/2;
+	bounds.z = cage_position.z + size.z/2;
+	position.x = 2.0f + getRandomFloat(bounds.x);
+	position.y = getRandomFloat(bounds.y);
+	position.z = 2.0f + getRandomFloat(bounds.z);
+	bounding_box.c = position;
+	neighbourhood.c = position;
 	bounding_box.r = glm::vec3{ vis, vis, vis };
+	neighbourhood.r = mulVector(bounding_box.r, 8);
+	maxSpeed = maxS;
+
+	id = i;
 	// might need to set an ideal height for 3D implementation
 };
 
@@ -47,8 +51,8 @@ glm::vec3 Boid::align(vector<Boid> flock) {
 	{
 		adjustment = divVector(adjustment, total);
 	}
-	adjustment = normVector(adjustment);
-	//adjustment = divVector(subVector(adjustment, velocity), 8);
+	//adjustment = normVector(adjustment);
+	adjustment = divVector(subVector(adjustment, velocity), 8);
 	return adjustment;
 }
 
@@ -73,8 +77,6 @@ glm::vec3 Boid::separation(vector<Boid> flock) {
 glm::vec3 Boid::cohesion(vector<Boid> flock) {
 	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
 
-	AABB neighbourhood = bounding_box;
-	neighbourhood.r = mulVector(bounding_box.r, 5);
 	int total = 0;
 	for (int i = 0; i < flock.size(); i++) {
 		if (id == flock[i].id)
@@ -89,49 +91,44 @@ glm::vec3 Boid::cohesion(vector<Boid> flock) {
 		adjustment = divVector(adjustment, total);
 		adjustment = subVector(adjustment, position);
 		adjustment = divVector(adjustment, 100);
-		//adjustment = subVector(adjustment, velocity);
-		//adjustment = limitVector(adjustment, maxForce);
 	}
-	//std::cout << flock[0].velocity.x << "," << flock[0].velocity.y << "," << flock[0].velocity.z << std::endl;
 	return adjustment;
 }
 
-//glm::vec3 Boid::follow(vector<Boid> flock, glm::vec3 master) {
-//	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
-//	int total = 0;
-//
-//	for (int i = 0; i < flock.size(); i++) {
-//		if (id == flock[i].id)
-//			continue;
-//		float dist = distance(flock[i].position, master);
-//
-//		if (dist != 0 && dist < visionRadius) {
-//			adjustment = addVector(adjustment, master);
-//			total++;
-//		}
-//	}
-//
-//	if (total > 0) {
-//		adjustment = divVector(adjustment, total);
-//		adjustment = limitVector(adjustment, maxSpeed);
-//		adjustment = subVector(adjustment, velocity);
-//		adjustment = limitVector(adjustment, maxForce);
-//	}
-//
-//	return adjustment;
-//}
+glm::vec3 Boid::follow(vector<Boid> flock, glm::vec3 master) {
+	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
+	int total = 0;
+
+	for (int i = 0; i < flock.size(); i++) {
+		if (id == flock[i].id)
+			continue;
+	if (isPointInsideSphere(master, neighbourhood)) {
+			adjustment = subVector(adjustment, master);
+			total++;
+		}
+	}
+
+	if (total > 0) {
+		adjustment = divVector(adjustment, total);
+		//adjustment = limitVector(adjustment, maxSpeed);
+	//	adjustment = subVector(adjustment, velocity);
+	//	adjustment = limitVector(adjustment, maxForce);
+	}
+
+	return adjustment;
+}
 
 void Boid::behaviour(vector<Boid> flock, glm::vec3 master, const float al, const float sep, const float coh, const float fol) {
 
 	glm::vec3 aligned = align(flock);
 	glm::vec3 separated = separation(flock);
 	glm::vec3 cohesive = cohesion(flock);
-	//	glm::vec3 following = follow(flock, master);
+//	glm::vec3 following = follow(flock, master);
 
 	aligned = mulVector(aligned, al);
 	separated = mulVector(separated, sep);
 	cohesive = mulVector(cohesive, coh);
-	//	following = mulVector(following, fol);
+	//following = mulVector(following, fol);
 
 	acceleration = addVector(acceleration, aligned);
 	acceleration = addVector(acceleration, separated);
@@ -141,13 +138,11 @@ void Boid::behaviour(vector<Boid> flock, glm::vec3 master, const float al, const
 
 void Boid::update(const float dt) {
 
-	//position = addVector(position, velocity);
 	velocity = addVector(velocity, acceleration);
-	//velocity = limitVector(velocity, maxSpeed);
 	limitVelocity(velocity, maxSpeed);
 	position = addVector(position, velocity);
 	bounding_box.c = glm::vec3{ position.x, position.y, position.z };
-
+	neighbourhood.c = bounding_box.c;
 	acceleration = glm::vec3(0.0f, 0.0f, 0.0f);  // reset acceleration, is this right??
 }
 
@@ -256,48 +251,25 @@ glm::vec3 Boid::limitVector(glm::vec3 vec, float limit) {
 	return limited;
 }
 
-void Boid::cageJack() {
-	if (position.x > bounds) {
-		velocity.x *= -1;
-	}
-	else if (position.x < 0.0f) {
-		velocity.x *= -1;
-	}
-
-	if (position.y > bounds) {
-		velocity.y *= -1;
-	}
-	else if (position.y < 0.0f) {
-		velocity.y *= -1;
-	}
-
-	if (position.z > bounds) {
-		velocity.z *= -1;
-	}
-	else if (position.z < 0.0f) {
-		velocity.z *= -1;
-	}
-}
-
-void Boid::cageShayne() {
-	if (position.x >= bounds) {
+void Boid::cage() {
+	if (position.x >= bounds.x) {
 		position.x = 0;
 	}
 	else if (position.x < 0.0f) {
-		position.x = bounds;
+		position.x = bounds.x;
 	}
 
-	if (position.y >= bounds) {
+	if (position.y >= bounds.y) {
 		position.y = 0;
 	}
 	else if (position.y < 0.0f) {
-		position.y = bounds;
+		position.y = bounds.y;
 	}
 
-	if (position.z >= bounds) {
+	if (position.z >= bounds.z) {
 		position.z = 0;
 	}
 	else if (position.z < 0.0f) {
-		position.z = bounds;
+		position.z = bounds.z;
 	}
 }

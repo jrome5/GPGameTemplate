@@ -15,20 +15,20 @@ class Boid {
 
 public:
 
-	Boid(float maxS, float maxF, float vis, float size, int i);
+	Boid(float maxS, float vis, glm::vec3 cage_position, glm::vec3 size, int i);
 	~Boid();
 
 
 	// VARIABLES
 	glm::vec3  position;
 	glm::vec3  velocity;
-	//glm::vec3  magnitude; set this later
 	glm::vec3  acceleration;
+	glm::vec3  bounds;
+
 	float     maxSpeed;
-	float     maxForce;
-	float	  bounds;
 
 	AABB bounding_box;
+	AABB neighbourhood;
 	int id;
 
 	// METHODS
@@ -64,11 +64,7 @@ public:
 
 	/* Keeps the boid within the boundaries of a virtual cage
 	*/
-	void cageJack();
-
-	/* Keeps the boid within the boundaries of a virtual cage
-	*/
-	void cageShayne();
+	void cage();
 
 
 	/* Calculates the distance between two vectors
