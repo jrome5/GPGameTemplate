@@ -82,9 +82,16 @@ constexpr glm::vec3 CAGE_POSITION(3.0f, CONTAINER_SIZE.y / 2, 3.0f);
 //PARTICLE DEMO
 Cube emitter_visual;
 Emitter emitter;
-//std::vector<Cube> particle_visuals;
+
+Cube emitter_visual2;
+Emitter emitter2;
+
 std::vector<Square> particle_visuals;
-constexpr int number_of_particles = 360;
+std::vector<Square> particle_visuals2;
+
+constexpr int number_of_particles = 500;
+constexpr float pi = 3.14159265359;
+
 
 int main()
 {
@@ -176,7 +183,7 @@ void startup() {
 	b_boxes.push_back(cube2);
 
 	//PARTICLE DEMO
-	emitter.spawn(glm::vec3{ 3.0f, 2.0f, 17.0f }, number_of_particles);
+	emitter.spawn(glm::vec3{ 2.0f, 0.5f, 16.0f }, number_of_particles);
 	emitter_visual.Load();
 	emitter_visual.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f);
 	for (int i = 0; i < number_of_particles; i++)
@@ -184,9 +191,23 @@ void startup() {
 		Square s;
 		s.Load();
 		s.lineColor = glm::vec4(0, 0, 0, 0);
-		s.fillColor = glm::vec4(1.0, 0, 0, 0.7);
+		s.fillColor = glm::vec4(1.0, 1.0, 0, 0.7);
 		particle_visuals.push_back(s);
 	}
+
+
+	emitter2.spawn(glm::vec3{ 4.0f, 0.5f, 18.0f }, number_of_particles);
+	emitter_visual2.Load();
+	emitter_visual2.fillColor = glm::vec4(1.0f, 0.5f, 0.5f, 1.0f);
+	for (int i = 0; i < number_of_particles; i++)
+	{
+		Square s;
+		s.Load();
+		s.lineColor = glm::vec4(0, 0, 0, 0);
+		s.fillColor = glm::vec4(1.0, 1.0, 0, 0.7);
+		particle_visuals2.push_back(s);
+	}
+
 
 	//BOIDS
 	container.Load();
@@ -618,33 +639,42 @@ void updateParticleDemo()
 	const auto dt = std::min(deltaTime, 0.2f);  //TODO: remove this workaround
 	//std::cout << "Partly working" << std::endl;
 	const float magnitude = 5.0f;
+	// 1st Emitter
 	for (int i = 0; i < number_of_particles; i++)
 	{
 		Particle& particle = emitter.getParticle(i);
 
+		float phi = std::acos(1 - (2 * i + 0.5) / number_of_particles);
+		float theta = pi * (1 + sqrt(5)) * i;
+
+		float x = std::cos(theta) * std::sin(phi);
+		float z = std::cos(theta) * std::cos(phi);
+		float y = std::sin(theta);
+
 		if (not particle.checkExpired(dt))
 		{
 			glm::vec3 accel;
-			accel.x = physics::getRandomFloat(magnitude, -magnitude / 2);
-			//accel.y = physics::getRandomFloat(0.5f, 0);
-			accel.y = -0.25;
-			accel.z = physics::getRandomFloat(magnitude, -magnitude / 2);
+
+			accel.x = x;
+			accel.y = y - 1.5;
+			accel.z = z;
 
 			particle.velocity += physics::calculateVelocity(accel, dt);
 			particle.position += physics::calculatePosition(particle.velocity, dt);
-			particle.trans = (particle.lifetime - particle.age) / particle.lifetime;
+			particle.decay = (particle.lifetime - particle.age) / particle.lifetime;
 
 		}
 
 		auto& visual = particle_visuals[i];
 
-		visual.fillColor = glm::vec4(1.0, 0, 0, particle.trans);
+		//visual.fillColor = glm::vec4(0.5, 0, 0, particle.trans);
+		visual.fillColor = glm::vec4(particle.decay, 0, 0, particle.decay);         // Decay transparency
 
-		glm::mat4 mv_matrix_square =
+		glm::mat4 mv_matrix_tri =
 			glm::translate(particle.position) *
 			glm::scale(glm::vec3(0.01f, 0.01f, 0.01f)) *
 			glm::mat4(1.0f);
-		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_square;
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_tri;
 
 		visual.mv_matrix[0][0] = 0.05f;
 		visual.mv_matrix[0][1] = 0.0f;
@@ -660,11 +690,69 @@ void updateParticleDemo()
 
 		visual.proj_matrix = myGraphics.proj_matrix;
 	}
+	// SECOND EMITTER
+	for (int i = 0; i < number_of_particles; i++)
+	{
+		Particle& particle = emitter2.getParticle(i);
+
+		float phi = std::acos(1 - (2 * i + 0.5) / number_of_particles);
+		float theta = pi * (1 + sqrt(5)) * i;
+
+		float x = std::cos(theta) * std::sin(phi);
+		float z = std::cos(theta) * std::cos(phi);
+		float y = std::sin(theta);
+
+		if (not particle.checkExpired(dt))
+		{
+			glm::vec3 accel;
+
+			accel.x = x;
+			accel.y = y - 1.5;
+			accel.z = z;
+
+			particle.velocity += physics::calculateVelocity(accel, dt);
+			particle.position += physics::calculatePosition(particle.velocity, dt);
+			particle.decay = (particle.lifetime - particle.age) / particle.lifetime;
+
+		}
+
+		auto& visual = particle_visuals2[i];
+
+		//visual.fillColor = glm::vec4(0.5, 0, 0, particle.trans);
+		visual.fillColor = glm::vec4(0.0f, particle.decay, 0, particle.decay);         // Decay transparency
+
+		glm::mat4 mv_matrix_tri =
+			glm::translate(particle.position) *
+			glm::scale(glm::vec3(0.01f, 0.01f, 0.01f)) *
+			glm::mat4(1.0f);
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_tri;
+
+		visual.mv_matrix[0][0] = 0.05f;
+		visual.mv_matrix[0][1] = 0.0f;
+		visual.mv_matrix[0][2] = 0.0f;
+
+		visual.mv_matrix[1][0] = 0.0f;
+		visual.mv_matrix[1][1] = -0.05f;
+		visual.mv_matrix[1][2] = 0.0f;
+
+		visual.mv_matrix[2][0] = 0.0f;
+		visual.mv_matrix[2][1] = 0.0f;
+		visual.mv_matrix[2][2] = 0.05f;
+
+		visual.proj_matrix = myGraphics.proj_matrix;
+	}
+
 	emitter_visual.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(emitter.getPosition())) *
 		glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
 		glm::mat4(1.0f);
 	emitter_visual.proj_matrix = myGraphics.proj_matrix;
+
+	emitter_visual2.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(emitter2.getPosition())) *
+		glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
+		glm::mat4(1.0f);
+	emitter_visual2.proj_matrix = myGraphics.proj_matrix;
 
 }
 
@@ -700,10 +788,17 @@ void renderScene() {
 			break;
 		case PARTICLE_DEMO.second:
 			emitter_visual.Draw();
+			emitter_visual2.Draw();
+
 			for (auto& p : particle_visuals)
 			{
 				p.Draw();
-			};
+			}
+
+			for (auto& p : particle_visuals2)
+			{
+				p.Draw();
+			}
 			break;
 		case BOIDS_DEMO.second:
 			for (auto& boid : boid_visuals)
