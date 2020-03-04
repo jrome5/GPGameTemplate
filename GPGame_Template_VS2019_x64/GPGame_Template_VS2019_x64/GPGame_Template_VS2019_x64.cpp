@@ -3,12 +3,15 @@
 #include "physics.h"
 #include "particle.h"
 #include <algorithm>
+#include <cmath>
 bounding_box::BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
 Cube emitter_visual;
 Emitter emitter;
 //std::vector<Cube> particle_visuals;
 std::vector<Square> particle_visuals;
-constexpr int number_of_particles = 360;
+//std::vector<Triangle> particle_visuals;
+constexpr int number_of_particles = 500;
+float r = 0.1;
 
 int main()
 {
@@ -65,7 +68,7 @@ void startup() {
 	//camera (constants set)
 	myGraphics.cameraPitch = 0.0f;
 	myGraphics.cameraYaw = 180.0f;
-	myGraphics.cameraPosition = glm::vec3(4.32f, 2.74f, 0.66f);
+	myGraphics.cameraPosition = glm::vec3(8.32f, 2.74f, 0.66f);
 	myGraphics.cameraFront = glm::vec3(0.000462104f, -0.964326f, 0.264716f);
 	myGraphics.cameraUp = glm::vec3(0, 1, 0);
 	myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
@@ -88,7 +91,7 @@ void startup() {
 		Square s;
 		s.Load();
 		s.lineColor = glm::vec4(0, 0, 0, 0);
-		s.fillColor = glm::vec4(1.0, 0, 0, 0.7);
+		s.fillColor = glm::vec4(1.0, 1.0, 0, 0.7);
 		particle_visuals.push_back(s);
 	}
 
@@ -170,33 +173,49 @@ void update(const float current_time)
 {
 	const auto dt = std::min(deltaTime, 0.2f);  //TODO: remove this workaround
 	const float magnitude = 5.0f;
+	const float turnFraction = 1.6180339;
+	
+	
 	for (int i = 0; i < number_of_particles; i++)
 	{
 		Particle& particle = emitter.getParticle(i);
 
-		if (not particle.checkExpired(dt))
+		float phi = std::acos(1 - (2*i + 0.5) / number_of_particles); //alpha
+		float theta = 3.14159265359 * (1 + sqrt(5)) * i; //omega
+
+		float x = std::cos(theta) * std::sin(phi);
+		float z = std::cos(theta) * std::cos(phi);
+		float y = std::sin(theta);
+
+		//if (not particle.checkExpired(dt))
 		{
 			glm::vec3 accel;
-			accel.x = physics::getRandomFloat(magnitude, -magnitude/2);
+			//accel.x = physics::getRandomFloat(magnitude, -magnitude/2);
 			//accel.y = physics::getRandomFloat(0.5f, 0);
-			accel.y = -0.25;
-			accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
+			//accel.y = -0.25;
+			//accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
 
-			particle.velocity += physics::calculateVelocity(accel, dt);
-			particle.position += physics::calculatePosition(particle.velocity, dt);
-			particle.trans = (particle.lifetime - particle.age) / particle.lifetime;
-			
+			//accel.x = x;
+			//accel.y = y;
+			//accel.z = z;
+
+			//particle.velocity += physics::calculateVelocity(accel, dt);
+			//particle.position += physics::calculatePosition(particle.velocity, dt);
+			particle.trans = (particle.lifetime - particle.age) / particle.lifetime;   
+			particle.position = glm::vec3(x*r + 5, y*r+5, z*r+5);                      // +5 to bring above floor
+			r = r + 0.00001;
 		}
 
 		auto& visual = particle_visuals[i];
 
-		visual.fillColor = glm::vec4(1.0, 0, 0, particle.trans);
+		//visual.fillColor = glm::vec4(0.5, 0, 0, particle.trans);
+		visual.fillColor = glm::vec4(0.5, 0, 0, 1/(10 * r));         // Decay transparency
 
-		glm::mat4 mv_matrix_square =
+		glm::mat4 mv_matrix_tri =
 			glm::translate(particle.position) *
 			glm::scale(glm::vec3(0.01f,0.01f,0.01f))*
 			glm::mat4(1.0f);
-		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_square;
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_tri;
 
 		visual.mv_matrix[0][0] = 0.05f;
 		visual.mv_matrix[0][1] = 0.0f;

@@ -11,8 +11,10 @@ typedef struct Particle
 		emitter_position = p;
 		mass = m;
 		lifetime = physics::getRandomFloat(10.0);
-		velocity = glm::vec3(0.0f, 1.0f, 0.0f);
+		velocity = glm::vec3(physics::getRandomFloat(4.0)-2, 2.0f, physics::getRandomFloat(4.0) - 2);
 		trans = 1.0f;
+		colour = glm::vec4(0.0f, 0.0f, 0.0f, trans);
+	
 	};
 
 	float mass = 1.0f;
@@ -23,7 +25,7 @@ typedef struct Particle
 	glm::vec3 emitter_position;
 	glm::vec3 position;
 	glm::vec3 velocity;
-	
+	glm::vec4 colour;
 
 	bool checkExpired(const float dt)
 	{
@@ -33,7 +35,7 @@ typedef struct Particle
 			lifetime = physics::getRandomFloat(10.0);
 			age = 0.0f;
 			position = emitter_position;
-			velocity = { 0.0, 1.0f, 0.0f };
+			velocity = { 0.0, 2.0f, 0.0f };
 			return true;
 		}
 		return false;
@@ -49,7 +51,7 @@ typedef struct Particle
 
 	float getRandColor() 
 	{
-
+		//return 
 	}
 };
 

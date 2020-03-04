@@ -50,7 +50,7 @@ bool		mouseEnabled = true; // keep track of mouse toggle.
 float		previous_time = 0.0f;
 
 // MAIN GRAPHICS OBJECT
-Graphics    myGraphics;        // Runing all the graphics in this object
+Graphics    myGraphics;        // Running all the graphics in this object
 
 // DEMO OBJECTS
 Cube        myCube;
@@ -62,6 +62,7 @@ Cube        myFloor;
 Line        myLine;
 Cylinder    myCylinder;
 Square      mySquare;
+Triangle    myTriangle;
 
 // Some global variable to do the animation.
 float t = 0.001f;            // Global variable for animation

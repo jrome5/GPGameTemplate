@@ -73,3 +73,9 @@ public:
 	Square();
 	~Square();
 };
+
+class Triangle : public Shapes {
+public:
+	Triangle();
+	~Triangle();
+};
