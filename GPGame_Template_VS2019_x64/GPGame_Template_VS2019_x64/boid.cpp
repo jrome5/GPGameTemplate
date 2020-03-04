@@ -74,7 +74,7 @@ glm::vec3 Boid::cohesion(vector<Boid> flock) {
 	glm::vec3 adjustment = glm::vec3(0.0f, 0.0f, 0.0f);
 
 	AABB neighbourhood = bounding_box;
-	neighbourhood.r = mulVector(bounding_box.r, 2);
+	neighbourhood.r = mulVector(bounding_box.r, 5);
 	int total = 0;
 	for (int i = 0; i < flock.size(); i++) {
 		if (id == flock[i].id)
@@ -88,7 +88,7 @@ glm::vec3 Boid::cohesion(vector<Boid> flock) {
 	if (total > 0) {
 		adjustment = divVector(adjustment, total);
 		adjustment = subVector(adjustment, position);
-		//adjustment = limitVector(adjustment, maxSpeed);
+		adjustment = divVector(adjustment, 100);
 		//adjustment = subVector(adjustment, velocity);
 		//adjustment = limitVector(adjustment, maxForce);
 	}
