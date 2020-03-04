@@ -67,3 +67,9 @@ public:
 	Line();
 	~Line();
 };
+
+class Square : public Shapes {
+public:
+	Square();
+	~Square();
+};

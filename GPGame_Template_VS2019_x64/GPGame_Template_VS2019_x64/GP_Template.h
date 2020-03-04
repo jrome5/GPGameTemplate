@@ -29,7 +29,7 @@ using namespace std;
 
 // MAIN FUNCTIONS
 void startup();
-//void updateCamera();
+void updateCamera();
 void update(const float current_time);
 void updateSceneElements();
 void renderScene();
@@ -61,6 +61,7 @@ Arrow       arrowZ;
 Cube        myFloor;
 Line        myLine;
 Cylinder    myCylinder;
+Square      mySquare;
 
 // Some global variable to do the animation.
 float t = 0.001f;            // Global variable for animation

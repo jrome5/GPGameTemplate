@@ -6,7 +6,8 @@
 bounding_box::BoundingBox b({ 3.0f, 10.0f, 3.0f }, 5);
 Cube emitter_visual;
 Emitter emitter;
-std::vector<Cube> particle_visuals;
+//std::vector<Cube> particle_visuals;
+std::vector<Square> particle_visuals;
 constexpr int number_of_particles = 360;
 
 int main()
@@ -20,7 +21,7 @@ int main()
 	while (!quit) {
 
 		// Update the camera transform based on interactive inputs or by following a predifined path.
-	
+		updateCamera();
 		// Update position, orientations and any other relevant visual state of any dynamic elements in the scene.
 		updateSceneElements();
 
@@ -62,9 +63,9 @@ void startup() {
 	myGraphics.proj_matrix = glm::perspective(glm::radians(50.0f), myGraphics.aspect, 0.1f, 1000.0f);
 
 	//camera (constants set)
-	myGraphics.cameraPitch = -72.0f;
-	myGraphics.cameraYaw = -89.0f;
-	myGraphics.cameraPosition = glm::vec3(4.32f, 12.74f, 0.66f);
+	myGraphics.cameraPitch = 0.0f;
+	myGraphics.cameraYaw = 180.0f;
+	myGraphics.cameraPosition = glm::vec3(4.32f, 2.74f, 0.66f);
 	myGraphics.cameraFront = glm::vec3(0.000462104f, -0.964326f, 0.264716f);
 	myGraphics.cameraUp = glm::vec3(0, 1, 0);
 	myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
@@ -75,21 +76,68 @@ void startup() {
 	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
 	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
 
+	
+
 	//BoundingBox
 	b.visual.Load();
-	emitter.spawn(glm::vec3{ 0.0f, 0.0f, 0.0f }, number_of_particles);
+	emitter.spawn(glm::vec3{ 0.0f, 2.0f, 0.0f }, number_of_particles);
 	emitter_visual.Load();
 	emitter_visual.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f);
 	for (int i = 0; i < number_of_particles; i++)
 	{
-		Cube s;
+		Square s;
 		s.Load();
+		s.lineColor = glm::vec4(0, 0, 0, 0);
+		s.fillColor = glm::vec4(1.0, 0, 0, 0.7);
 		particle_visuals.push_back(s);
 	}
 
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
+}
+
+void updateCamera() {
+
+	// calculate movement for FPS camera
+	GLfloat xoffset = myGraphics.mouseX - myGraphics.cameraLastX;
+	GLfloat yoffset = myGraphics.cameraLastY - myGraphics.mouseY;    // Reversed mouse movement
+	myGraphics.cameraLastX = (GLfloat)myGraphics.mouseX;
+	myGraphics.cameraLastY = (GLfloat)myGraphics.mouseY;
+
+	GLfloat sensitivity = 0.05f;
+	xoffset *= sensitivity;
+	yoffset *= sensitivity;
+
+	myGraphics.cameraYaw += xoffset;
+	myGraphics.cameraPitch += yoffset;
+
+	// check for pitch out of bounds otherwise screen gets flipped
+	if (myGraphics.cameraPitch > 89.0f) myGraphics.cameraPitch = 89.0f;
+	if (myGraphics.cameraPitch < -89.0f) myGraphics.cameraPitch = -89.0f;
+
+	// Calculating FPS camera movement (See 'Additional Reading: Yaw and Pitch to Vector Calculations' in VISION)
+	glm::vec3 front;
+	front.x = cos(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
+	front.y = sin(glm::radians(myGraphics.cameraPitch));
+	front.z = sin(glm::radians(myGraphics.cameraYaw)) * cos(glm::radians(myGraphics.cameraPitch));
+
+	myGraphics.cameraFront = glm::normalize(front);
+
+	// Update movement using the keys
+	GLfloat cameraSpeed = 10.0f * deltaTime;
+	if (keyStatus[GLFW_KEY_W]) myGraphics.cameraPosition += cameraSpeed * myGraphics.cameraFront;
+	if (keyStatus[GLFW_KEY_S]) myGraphics.cameraPosition -= cameraSpeed * myGraphics.cameraFront;
+	if (keyStatus[GLFW_KEY_A]) myGraphics.cameraPosition -= glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
+	if (keyStatus[GLFW_KEY_D]) myGraphics.cameraPosition += glm::normalize(glm::cross(myGraphics.cameraFront, myGraphics.cameraUp)) * cameraSpeed;
+
+	// IMPORTANT PART
+	// Calculate my view matrix using the lookAt helper function
+	if (mouseEnabled) {
+		myGraphics.viewMatrix = glm::lookAt(myGraphics.cameraPosition,			// eye
+			myGraphics.cameraPosition + myGraphics.cameraFront,					// centre
+			myGraphics.cameraUp);												// up
+	}
 }
 
 void updateSceneElements() {
@@ -130,20 +178,38 @@ void update(const float current_time)
 		{
 			glm::vec3 accel;
 			accel.x = physics::getRandomFloat(magnitude, -magnitude/2);
-			accel.y = physics::getRandomFloat(0.5f, 0);
+			//accel.y = physics::getRandomFloat(0.5f, 0);
+			accel.y = -0.25;
 			accel.z = physics::getRandomFloat(magnitude, -magnitude/2);
 
 			particle.velocity += physics::calculateVelocity(accel, dt);
 			particle.position += physics::calculatePosition(particle.velocity, dt);
+			particle.trans = (particle.lifetime - particle.age) / particle.lifetime;
+			
 		}
 
 		auto& visual = particle_visuals[i];
 
-		glm::mat4 mv_matrix_sphere =
+		visual.fillColor = glm::vec4(1.0, 0, 0, particle.trans);
+
+		glm::mat4 mv_matrix_square =
 			glm::translate(particle.position) *
 			glm::scale(glm::vec3(0.01f,0.01f,0.01f))*
 			glm::mat4(1.0f);
-		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_square;
+
+		visual.mv_matrix[0][0] = 0.05f;
+		visual.mv_matrix[0][1] = 0.0f;
+		visual.mv_matrix[0][2] = 0.0f;
+
+		visual.mv_matrix[1][0] = 0.0f;
+		visual.mv_matrix[1][1] = -0.05f;
+		visual.mv_matrix[1][2] = 0.0f;
+
+		visual.mv_matrix[2][0] = 0.0f;
+		visual.mv_matrix[2][1] = 0.0f;
+		visual.mv_matrix[2][2] = 0.05f;
+
 		visual.proj_matrix = myGraphics.proj_matrix;
 	}
 
@@ -161,13 +227,14 @@ void update(const float current_time)
 		glm::mat4(1.0f);
 	b.visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_cube;
 	b.visual.proj_matrix = myGraphics.proj_matrix;
+
 }
 
 void renderScene() {
 	// Clear viewport - start a new frame.
 	myGraphics.ClearViewport();
 	myFloor.Draw();
-	b.visual.Draw();
+	//b.visual.Draw();
 	emitter_visual.Draw();
 
 	for (auto& p : particle_visuals)
