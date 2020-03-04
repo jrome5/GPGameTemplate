@@ -36,9 +36,7 @@ void renderScene();
 // CALLBACK FUNCTIONS
 void onResizeCallback(GLFWwindow* window, int w, int h);
 void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
-void onMouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void onMouseMoveCallback(GLFWwindow* window, double x, double y);
-void onMouseWheelCallback(GLFWwindow* window, double xoffset, double yoffset);
 void createMaze();
 
 //DEMO FUNCTIONS

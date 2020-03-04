@@ -5,6 +5,7 @@
 #include "Astar.h"
 #include "bounding_box.h"
 #include "boid.h"
+#include "particle.h"
 
 constexpr int ROWS = 20;
 constexpr int COLS = 20;
@@ -58,7 +59,7 @@ glm::vec3 prev_cell_pos(0.0f, 0.0f, 0.0f);
 BoundingBox myFloor({ 0.0f, 0.0f, 0.0f }, 1000.0f, 2);
 
 //PHYSICS DEMO
-BoundingBox cube1({ 18.0f, 3.0f, 3.0f }, 2.0f, 0);
+BoundingBox cube1(glm::vec3(18.0f, 3.0f, 3.0f ), 2.0f, 0);
 BoundingBox cube2({ 18.0f, 12.0f, 4.1f }, 5.0f, 1);
 std::vector<BoundingBox> b_boxes;
 
@@ -77,6 +78,12 @@ float sep = 1.0f;
 float coh = 1.0f;
 float fol = 0.0f;
 
+//PARTICLE DEMO
+Cube emitter_visual;
+Emitter emitter;
+//std::vector<Cube> particle_visuals;
+std::vector<Square> particle_visuals;
+constexpr int number_of_particles = 360;
 
 int main()
 {
@@ -135,13 +142,9 @@ void startup() {
 	deltaTime = currentTime;                        // start delta time
 	lastTime = currentTime;                            // Save for next frame calculations.
 
-	// Callback graphics and key update functions - declared in main to avoid scoping complexity.
-	// More information here : https://www.glfw.org/docs/latest/input_guide.html
 	glfwSetWindowSizeCallback(myGraphics.window, onResizeCallback);            // Set callback for resize
 	glfwSetKeyCallback(myGraphics.window, onKeyCallback);                    // Set Callback for keys
-	glfwSetMouseButtonCallback(myGraphics.window, onMouseButtonCallback);    // Set callback for mouse click
 	glfwSetCursorPosCallback(myGraphics.window, onMouseMoveCallback);        // Set callback for mouse move
-	glfwSetScrollCallback(myGraphics.window, onMouseWheelCallback);            // Set callback for mouse wheel.
 
 	// Calculate proj_matrix for the first time.
 	myGraphics.aspect = (float)myGraphics.windowWidth / (float)myGraphics.windowHeight;
@@ -159,7 +162,7 @@ void startup() {
 	myFloor.is_static = true;
 //	myFloor.friction = 0.75;
 
-	//BoundingBox
+	//PHYSICS DEMO
 	cube1.visual.Load();
 	cube1.visual.fillColor = glm::vec4(0.5f, 0.5f, 0.9f, 1.0f);
 	cube1.setScale(1.0f, 1.0f, 1.0f);
@@ -170,6 +173,19 @@ void startup() {
 	b_boxes.push_back(myFloor);
 	b_boxes.push_back(cube1);
 	b_boxes.push_back(cube2);
+
+	//PARTICLE DEMO
+	emitter.spawn(glm::vec3{ 3.0f, 2.0f, 17.0f }, number_of_particles);
+	emitter_visual.Load();
+	emitter_visual.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 1.0f);
+	for (int i = 0; i < number_of_particles; i++)
+	{
+		Square s;
+		s.Load();
+		s.lineColor = glm::vec4(0, 0, 0, 0);
+		s.fillColor = glm::vec4(1.0, 0, 0, 0.7);
+		particle_visuals.push_back(s);
+	}
 
 	//BOIDS
 	container.Load();
@@ -436,7 +452,7 @@ void updateSceneElements() {
 	if (keyStatus[GLFW_KEY_2])
 	{
 		target = PARTICLE_DEMO.first;
-		activation_point = BOIDS_DEMO.second;
+		activation_point = PARTICLE_DEMO.second;
 		new_path = true;
 	}
 	if (keyStatus[GLFW_KEY_3])
@@ -567,7 +583,6 @@ void updateBoidsDemo()
 };
 void updatePhysicsDemo() 
 {
-//	std::cout << "Physics physics" << std::endl;
 	const float dt = std::min(deltaTime, 0.2f);
 
 	for (auto& b : b_boxes)
@@ -579,9 +594,9 @@ void updatePhysicsDemo()
 		}
 		if (not b.is_static && not b.at_rest)
 		{
-			const auto force = b.calculateForce(gravity);
-			const auto acceleration = b.calculateAcceleration(force);
-			b.calculateVelocity(acceleration, dt);
+			const auto force = physics::calculateForce(gravity, b.mass);
+			const auto acceleration = physics::calculateAcceleration(force, b.mass);
+			b.velocity += physics::calculateVelocity(acceleration, dt);
 		}
 		else
 		{
@@ -598,11 +613,62 @@ void updatePhysicsDemo()
 		}
 		b.update(dt);
 	}
-};
+}
+
 void updateParticleDemo() 
 {
-	std::cout << "Partly working" << std::endl;
-};
+	const auto dt = std::min(deltaTime, 0.2f);  //TODO: remove this workaround
+	//std::cout << "Partly working" << std::endl;
+	const float magnitude = 5.0f;
+	for (int i = 0; i < number_of_particles; i++)
+	{
+		Particle& particle = emitter.getParticle(i);
+
+		if (not particle.checkExpired(dt))
+		{
+			glm::vec3 accel;
+			accel.x = physics::getRandomFloat(magnitude, -magnitude / 2);
+			//accel.y = physics::getRandomFloat(0.5f, 0);
+			accel.y = -0.25;
+			accel.z = physics::getRandomFloat(magnitude, -magnitude / 2);
+
+			particle.velocity += physics::calculateVelocity(accel, dt);
+			particle.position += physics::calculatePosition(particle.velocity, dt);
+			particle.trans = (particle.lifetime - particle.age) / particle.lifetime;
+
+		}
+
+		auto& visual = particle_visuals[i];
+
+		visual.fillColor = glm::vec4(1.0, 0, 0, particle.trans);
+
+		glm::mat4 mv_matrix_square =
+			glm::translate(particle.position) *
+			glm::scale(glm::vec3(0.01f, 0.01f, 0.01f)) *
+			glm::mat4(1.0f);
+		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_square;
+
+		visual.mv_matrix[0][0] = 0.05f;
+		visual.mv_matrix[0][1] = 0.0f;
+		visual.mv_matrix[0][2] = 0.0f;
+
+		visual.mv_matrix[1][0] = 0.0f;
+		visual.mv_matrix[1][1] = -0.05f;
+		visual.mv_matrix[1][2] = 0.0f;
+
+		visual.mv_matrix[2][0] = 0.0f;
+		visual.mv_matrix[2][1] = 0.0f;
+		visual.mv_matrix[2][2] = 0.05f;
+
+		visual.proj_matrix = myGraphics.proj_matrix;
+	}
+	emitter_visual.mv_matrix = myGraphics.viewMatrix *
+		glm::translate(glm::vec3(emitter.getPosition())) *
+		glm::scale(glm::vec3(1.0f, 1.0f, 1.0f)) *
+		glm::mat4(1.0f);
+	emitter_visual.proj_matrix = myGraphics.proj_matrix;
+
+}
 
 void renderScene() {
 	// Clear viewport - start a new frame.
@@ -635,6 +701,11 @@ void renderScene() {
 			}
 			break;
 		case PARTICLE_DEMO.second:
+			emitter_visual.Draw();
+			for (auto& p : particle_visuals)
+			{
+				p.Draw();
+			};
 			break;
 		case BOIDS_DEMO.second:
 			for (auto& boid : boid_visuals)
@@ -666,20 +737,12 @@ void onKeyCallback(GLFWwindow* window, int key, int scancode, int action, int mo
 
 	// toggle showing mouse.
 	if (keyStatus[GLFW_KEY_M]) {
-	/*	cout << "Camera up:" << myGraphics.cameraUp.x << " " << myGraphics.cameraUp.y << " " << myGraphics.cameraUp.z << "\n";
-		cout << "Camera pitch:" << myGraphics.cameraPitch << "\n";
-		cout << "Camera yaw:" << myGraphics.cameraYaw << "\n";
-		cout << "Camera pos:" << myGraphics.cameraPosition.x << " " << myGraphics.cameraPosition.y << " " << myGraphics.cameraPosition.z << "/n";*/
 		mouseEnabled = !mouseEnabled;
 		myGraphics.ToggleMouse();
 	}
 	// If exit key pressed.
 	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, GLFW_TRUE);
-}
-
-void onMouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-
 }
 
 void onMouseMoveCallback(GLFWwindow* window, double x, double y) {
@@ -693,8 +756,4 @@ void onMouseMoveCallback(GLFWwindow* window, double x, double y) {
 	if (myGraphics.cameraFirstMouse) {
 		myGraphics.cameraLastX = (GLfloat)myGraphics.mouseX; myGraphics.cameraLastY = (GLfloat)myGraphics.mouseY; myGraphics.cameraFirstMouse = false;
 	}
-}
-
-void onMouseWheelCallback(GLFWwindow* window, double xoffset, double yoffset) {
-	int yoffsetInt = static_cast<int>(yoffset);
 }

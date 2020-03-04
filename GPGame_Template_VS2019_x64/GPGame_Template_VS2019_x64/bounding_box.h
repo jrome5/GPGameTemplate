@@ -1,6 +1,5 @@
 #pragma once
 #include "shapes.h"
-#include "particle.h"
 #include "physics.h"
 #ifndef BOUNDING_BOX_H
 #define BOUNDING_BOX_H
@@ -23,10 +22,14 @@ inline glm::vec3 limitVector(glm::vec3 v1, float m)
 	return v2;
 }
 
-class BoundingBox : public Particle {
+class BoundingBox
+{
 public:
-	BoundingBox(glm::vec3 position, float mass, int identifier) : Particle(position, mass)
+	BoundingBox(const glm::vec3& pos, const float m, const int identifier)
 	{
+		position = pos;
+		mass = m;
+		velocity = { 0.0f, 0.0f, 0.0f };
 		visual.fillColor = glm::vec4(0.0, 0.0, 0.0, 1.0);
 		visual.lineColor = glm::vec4(0.2f, 0.2, 0.2, 1.0);
 		visual.lineWidth = 5.0f;
@@ -39,7 +42,10 @@ public:
 
 	Cube visual;
 	AABB aabb;
+	glm::vec3 position;
+	glm::vec3 velocity;
 	glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
+	float mass;
 	float friction = 0.98f;
 	bool is_static = false;
 	bool at_rest = false;
@@ -89,9 +95,8 @@ public:
 
 	void update(const float dt)
 	{
-		calculatePosition(velocity, dt);
+		position += physics::calculatePosition(velocity, dt);
 		setPosition(position);
-		//AtRest();
 		//check if bounding box visuals
 		glm::mat4 mv_matrix_cube =
 			glm::translate(position) *
