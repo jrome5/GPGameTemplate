@@ -287,33 +287,47 @@ void updateSceneElements() {
 	myLine.proj_matrix = myGraphics.proj_matrix;
 
 	// BILLBOARDS
-	// Get camera position
 
-	// Calculate Plane
+
 	myPlane.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(1.0f, 3.0f, 1.0f)) *
-		glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) *
+		//glm::scale(glm::vec3(0.5f, 0.5f, 0.5f)) *
 		glm::mat4(1.0f);
 
-	myPlane.mv_matrix[0][0] = 1.0f;
+
+	myPlane.mv_matrix[0][0] = 0.5f;
 	myPlane.mv_matrix[0][1] = 0.0f;
 	myPlane.mv_matrix[0][2] = 0.0f;
 
 	myPlane.mv_matrix[1][0] = 0.0f;
-	myPlane.mv_matrix[1][1] = -1.0f;
+	myPlane.mv_matrix[1][1] = -0.5f;
 	myPlane.mv_matrix[1][2] = 0.0f;
 
 	myPlane.mv_matrix[2][0] = 0.0f;
 	myPlane.mv_matrix[2][1] = 0.0f;
-	myPlane.mv_matrix[2][2] = 1.0f;
+	myPlane.mv_matrix[2][2] = 0.5f;
+
 
 	myPlane.proj_matrix = myGraphics.proj_matrix;
 
 	// Calculate Triangle
 	myTriangle.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(-1.0f, 3.0f, 1.0f)) *
-		glm::scale(glm::vec3(0.5f ,0.5f, 0.5f)) *
+		//glm::scale(glm::vec3(0.5f ,0.5f, 0.5f)) *
 		glm::mat4(1.0f);
+
+	myTriangle.mv_matrix[0][0] = 0.5f;
+	myTriangle.mv_matrix[0][1] = 0.0f;
+	myTriangle.mv_matrix[0][2] = 0.0f;
+
+	myTriangle.mv_matrix[1][0] = 0.0f;
+	myTriangle.mv_matrix[1][1] = -0.5f;
+	myTriangle.mv_matrix[1][2] = 0.0f;
+
+	myTriangle.mv_matrix[2][0] = 0.0f;
+	myTriangle.mv_matrix[2][1] = 0.0f;
+	myTriangle.mv_matrix[2][2] = 0.5f;
+
 	myTriangle.proj_matrix = myGraphics.proj_matrix;
 
 
