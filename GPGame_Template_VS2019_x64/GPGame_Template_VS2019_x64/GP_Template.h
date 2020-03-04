@@ -41,6 +41,11 @@ void onMouseMoveCallback(GLFWwindow* window, double x, double y);
 void onMouseWheelCallback(GLFWwindow* window, double xoffset, double yoffset);
 void createMaze();
 
+//DEMO FUNCTIONS
+void updateBoidsDemo();
+void updatePhysicsDemo();
+void updateParticleDemo();
+
 // VARIABLES
 bool        quit = false;
 float       deltaTime = 0.0f;    // Keep track of time per frame.
@@ -53,14 +58,3 @@ float		previous_time = 0.0f;
 Graphics    myGraphics;        // Runing all the graphics in this object
 
 // DEMO OBJECTS
-Cube        myCube;
-Sphere      mySphere;
-Arrow       arrowX;
-Arrow       arrowY;
-Arrow       arrowZ;
-Cube        myFloor;
-Line        myLine;
-Cylinder    myCylinder;
-
-// Some global variable to do the animation.
-float t = 0.001f;            // Global variable for animation

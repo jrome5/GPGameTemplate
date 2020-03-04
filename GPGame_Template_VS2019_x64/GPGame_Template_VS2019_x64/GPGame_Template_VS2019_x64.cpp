@@ -3,6 +3,7 @@
 #include <math.h> 
 #include "graph.h"
 #include "Astar.h"
+#include "bounding_box.h"
 
 constexpr int ROWS = 20;
 constexpr int COLS = 20;
@@ -29,11 +30,15 @@ constexpr bool grid[ROWS][COLS] = { {0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1
 								}; //create blocks on 1s, empty space on zeros
 
 constexpr int MAZE_SIZE = ROWS * COLS;
-constexpr int PHYSICS_DEMO = 57;
-constexpr int PARTICLE_DEMO = 342;
-constexpr int BOIDS_DEMO = 357;
+//demo location, activation point
+constexpr std::pair<int, int> PARTICLE_DEMO = std::make_pair(57, 157); 
+constexpr std::pair<int, int> PHYSICS_DEMO = std::make_pair(342, 242);
+constexpr std::pair<int, int> BOIDS_DEMO = std::make_pair(357, 237);
 
 int target = -1;
+int start = -1;
+int activation_point = -1;
+bool activate_demo = false;
 
 AABB camera_aabb;
 typedef struct wall
@@ -49,6 +54,12 @@ std::vector<Cube> path_visuals;
 Graph graph;
 Cube active_cell;
 glm::vec3 prev_cell_pos(0.0f, 0.0f, 0.0f);
+BoundingBox myFloor({ 0.0f, 0.0f, 0.0f }, 1000.0f, 2);
+
+//PHYSICS DEMO
+BoundingBox cube1({ 18.0f, 3.0f, 3.0f }, 2.0f, 0);
+BoundingBox cube2({ 18.0f, 12.0f, 4.1f }, 5.0f, 1);
+std::vector<BoundingBox> b_boxes;
 
 int main()
 {
@@ -124,9 +135,24 @@ void startup() {
 	myGraphics.cameraPitch = -55.05f;
 
 	// Load Geometry examples
-	myFloor.Load();
-	myFloor.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
-	myFloor.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
+	myFloor.visual.Load();
+	myFloor.visual.fillColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand Colour
+	myFloor.visual.lineColor = glm::vec4(130.0f / 255.0f, 96.0f / 255.0f, 61.0f / 255.0f, 1.0f);    // Sand again
+	myFloor.setScale(1000.f, 0.005f, 1000.0f);
+	myFloor.is_static = true;
+//	myFloor.friction = 0.75;
+
+	//BoundingBox
+	cube1.visual.Load();
+	cube1.visual.fillColor = glm::vec4(0.5f, 0.5f, 0.9f, 1.0f);
+	cube1.setScale(1.0f, 1.0f, 1.0f);
+	cube2.visual.Load();
+	cube2.setScale(1.0f, 1.0f, 1.0f);
+
+	//Add b boxes to vector
+	b_boxes.push_back(myFloor);
+	b_boxes.push_back(cube1);
+	b_boxes.push_back(cube2);
 
 	active_cell.Load();
 	active_cell.fillColor = glm::vec4(0.5f, 0.5f, 1.0f, 0.75f);
@@ -144,7 +170,8 @@ void startup() {
 	}
 
 	camera_aabb.r = Point(myGraphics.cameraPosition.x, myGraphics.cameraPosition.y, myGraphics.cameraPosition.z);
-	camera_aabb.r = Point(0.3f, 0.3f, 0.3f);
+	const float player_size = 0.25f;
+	camera_aabb.r = Point(player_size, player_size, player_size);
 	// Optimised Graphics
 	myGraphics.SetOptimisations();        // Cull and depth testing
 
@@ -294,6 +321,15 @@ void updateCamera() {
 			}
 		}
 	}
+	if (not collision)
+	{
+		for(auto box : b_boxes)
+			if (isCollisionSphere(camera_aabb, box.aabb) && box.position.y <= camera_aabb.c.y)
+			{
+				collision = true;
+				break;
+			}
+	}
 	if (!collision)
 	{
 		//update camera
@@ -346,27 +382,30 @@ void updateSceneElements() {
 	}
 		
 	// Calculate floor position and resize
-	myFloor.mv_matrix = myGraphics.viewMatrix *
+	myFloor.visual.mv_matrix = myGraphics.viewMatrix *
 		glm::translate(glm::vec3(0.0f, 0.0f, 0.0f)) *
 		glm::scale(glm::vec3(1000.0f, 0.001f, 1000.0f)) *
 		glm::mat4(1.0f);
-	myFloor.proj_matrix = myGraphics.proj_matrix;
+	myFloor.visual.proj_matrix = myGraphics.proj_matrix;
 	
 	bool new_path = false;
 	// Calculate floor position and resize
 	if (keyStatus[GLFW_KEY_1]) 
 	{
-		target = PHYSICS_DEMO;
+		target = PHYSICS_DEMO.first;
+		activation_point = PHYSICS_DEMO.second;
 		new_path = true;
 	}
 	if (keyStatus[GLFW_KEY_2])
 	{
-		target = PARTICLE_DEMO;
+		target = PARTICLE_DEMO.first;
+		activation_point = BOIDS_DEMO.second;
 		new_path = true;
 	}
 	if (keyStatus[GLFW_KEY_3])
 	{
-		target = BOIDS_DEMO;
+		target = BOIDS_DEMO.first;
+		activation_point = BOIDS_DEMO.second;
 		new_path = true;
 	}
 
@@ -381,10 +420,32 @@ void updateSceneElements() {
 		if (target != -1)
 		{
 			path.clear();
-			int start = (ROWS - cell_pos.z) * ROWS + (COLS - cell_pos.x);
+			start = (ROWS - cell_pos.z) * ROWS + (COLS - cell_pos.x);
 			a_star_search(graph, start, target, path);
+			if (start == activation_point)
+			{
+				activate_demo = !activate_demo;
+			}
 		}
 		prev_cell_pos = cell_pos;
+	}
+
+	if (activate_demo)
+	{
+		switch (activation_point)
+		{
+		case PHYSICS_DEMO.second:
+			updatePhysicsDemo();
+			break;
+		case PARTICLE_DEMO.second:
+			updateParticleDemo();
+			break;
+		case BOIDS_DEMO.second:
+			updateBoidsDemo();
+			break;
+		default:
+			break;
+		}
 	}
 
 	active_cell.mv_matrix = myGraphics.viewMatrix *
@@ -418,10 +479,53 @@ void updateSceneElements() {
 	if (glfwWindowShouldClose(myGraphics.window) == GL_TRUE) quit = true; // If quit by pressing x on window.
 }
 
+void updateBoidsDemo() 
+{
+	std::cout << "Me and the boids having a demo" << std::endl;
+};
+void updatePhysicsDemo() 
+{
+//	std::cout << "Physics physics" << std::endl;
+	const float dt = std::min(deltaTime, 0.2f);
+
+	for (auto& b : b_boxes)
+	{
+		if (isCollisionSphere(camera_aabb, b.aabb))
+		{
+			b.velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+			continue;
+		}
+		if (not b.is_static && not b.at_rest)
+		{
+			const auto force = b.calculateForce(gravity);
+			const auto acceleration = b.calculateAcceleration(force);
+			b.calculateVelocity(acceleration, dt);
+		}
+		else
+		{
+			for (auto& b2 : b_boxes)
+			{
+				if (b.id == b2.id)
+					continue;
+				if (isCollisionCube(b.aabb, b2.aabb))
+				{
+					b.calculateResponse(b2);
+					b2.update(dt);
+				}
+			}
+		}
+		b.update(dt);
+	}
+};
+void updateParticleDemo() 
+{
+	std::cout << "Partly working" << std::endl;
+};
+
 void renderScene() {
 	// Clear viewport - start a new frame.
 	myGraphics.ClearViewport();
-	myFloor.Draw();
+	myFloor.visual.Draw();
 	// Draw objects in screen
 	for (auto& wall : inner_walls)
 	{
@@ -436,6 +540,26 @@ void renderScene() {
 		p.Draw();
 	}
 	active_cell.Draw();
+	if (activate_demo)
+	{
+		switch (activation_point)
+		{
+		case PHYSICS_DEMO.second:
+			for (auto& v : b_boxes)
+			{
+				if (v.id == 2)
+					continue;
+				v.visual.Draw();
+			}
+			break;
+		case PARTICLE_DEMO.second:
+			break;
+		case BOIDS_DEMO.second:
+			break;
+		default:
+			break;
+		}
+	}
 }
 
 // CallBack functions low level functionality.
