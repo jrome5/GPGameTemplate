@@ -25,7 +25,7 @@ inline glm::vec3 limitVector(glm::vec3 v1, float m)
 class BoundingBox
 {
 public:
-	BoundingBox(const glm::vec3& pos, const float m, const int identifier)
+	BoundingBox(const glm::vec3& pos, const float m, const int identifier= -1)
 	{
 		position = pos;
 		mass = m;
@@ -44,6 +44,7 @@ public:
 	AABB aabb;
 	glm::vec3 position;
 	glm::vec3 velocity;
+	glm::vec3 acceleration;
 	glm::vec3 scale = { 1.0f, 1.0f, 1.0f };
 	float mass;
 	float friction = 0.98f;
@@ -57,6 +58,11 @@ public:
 		scale.y = y;
 		scale.z = z;
 		aabb.r = glm::vec3{ x / 2, y / 2, z / 2 };
+	}
+
+	void addForce(const glm::vec3 force)
+	{
+		acceleration = physics::calculateAcceleration(force, mass);
 	}
 
 	void setPosition(const glm::vec3& pos)

@@ -59,8 +59,8 @@ glm::vec3 prev_cell_pos(0.0f, 0.0f, 0.0f);
 BoundingBox myFloor({ 0.0f, 0.0f, 0.0f }, 1000.0f, 2);
 
 //PHYSICS DEMO
-BoundingBox cube1(glm::vec3(18.0f, 3.0f, 3.0f ), 2.0f, 0);
-BoundingBox cube2({ 18.0f, 12.0f, 4.1f }, 5.0f, 1);
+BoundingBox bouncing_cube(glm::vec3(17.1f, 5.0f, 1.1f ), 2.0f, 0);
+BoundingBox force_cube({ 19.0f, 0.5f, 4.1f }, 1.0f, 1);
 std::vector<BoundingBox> b_boxes;
 
 //BOIDS_DEMO
@@ -80,7 +80,7 @@ constexpr glm::vec3 CAGE_POSITION(3.0f, CONTAINER_SIZE.y / 2, 3.0f);
 
 
 //PARTICLE DEMO
-Emitter red_firework(glm::vec3(2.0f, 0.5f, 16.0f), 500);
+Emitter red_firework(glm::vec3(2.0f, 0.5f, 18.0f), 500);
 Emitter green_firework(glm::vec3(4.0f, 0.5f, 18.0f), 500);
 
 
@@ -162,16 +162,16 @@ void startup() {
 //	myFloor.friction = 0.75;
 
 	//PHYSICS DEMO
-	cube1.visual.Load();
-	cube1.visual.fillColor = glm::vec4(0.5f, 0.5f, 0.9f, 1.0f);
-	cube1.setScale(1.0f, 1.0f, 1.0f);
-	cube2.visual.Load();
-	cube2.setScale(1.0f, 1.0f, 1.0f);
-
+	bouncing_cube.visual.Load();
+	bouncing_cube.visual.fillColor = glm::vec4(0.5f, 0.5f, 0.9f, 1.0f);
+	bouncing_cube.setScale(1.0f, 1.0f, 1.0f);
+	force_cube.visual.Load();
+	force_cube.setScale(1.0f, 1.0f, 1.0f);
+	force_cube.addForce(glm::vec3(-150.0, 300.0f, 200.0f));
 	//Add b boxes to vector
 	b_boxes.push_back(myFloor);
-	b_boxes.push_back(cube1);
-	b_boxes.push_back(cube2);
+	b_boxes.push_back(bouncing_cube);
+	b_boxes.push_back(force_cube);
 
 	//PARTICLE DEMO
 	red_firework.visual.Load();
@@ -586,21 +586,45 @@ void updatePhysicsDemo()
 		}
 		if (not b.is_static && not b.at_rest)
 		{
-			const auto force = physics::calculateForce(gravity, b.mass);
-			const auto acceleration = physics::calculateAcceleration(force, b.mass);
+			auto force = physics::calculateForce(gravity, b.mass);
+			const auto acceleration = b.acceleration + physics::calculateAcceleration(force, b.mass);
 			b.velocity += physics::calculateVelocity(acceleration, dt);
+			b.acceleration = glm::vec3(0.0f, 0.0f, 0.0f); //reset acceleration after applying force
 		}
-		else
+		bool collision = false;
+		for (auto wall : inner_walls)
 		{
-			for (auto& b2 : b_boxes)
+			if (isCollisionCube(b.aabb, wall.aabb))
 			{
-				if (b.id == b2.id)
-					continue;
-				if (isCollisionCube(b.aabb, b2.aabb))
+				collision = true;
+				BoundingBox wall_b(wall.aabb.c, 1.0f);
+				wall_b.aabb = wall.aabb;
+				b.calculateResponse(wall_b);
+				break;
+			}
+		}
+		if (not collision)
+		{
+			for (auto wall : outer_walls)
+			{
+				if (isCollisionCube(b.aabb, wall.aabb))
 				{
-					b.calculateResponse(b2);
-					b2.update(dt);
+					collision = true;
+					BoundingBox wall_b(wall.aabb.c, 1.0f);
+					wall_b.aabb = wall.aabb;
+					b.calculateResponse(wall_b);
+					break;
 				}
+			}
+		}		
+		for (auto& b2 : b_boxes)
+		{
+			if (b.id == b2.id)
+				continue;
+			if (isCollisionCube(b.aabb, b2.aabb))
+			{
+				b.calculateResponse(b2);
+				b2.update(dt);
 			}
 		}
 		b.update(dt);
