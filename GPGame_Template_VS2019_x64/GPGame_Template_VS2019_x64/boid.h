@@ -25,7 +25,11 @@ public:
 	glm::vec3  acceleration;
 	glm::vec3  bounds;
 
+	float visionRadius;
+	float maxForce;
+
 	float     maxSpeed;
+	
 
 	AABB bounding_box;
 	AABB neighbourhood;
@@ -47,9 +51,9 @@ public:
 	*/
 	glm::vec3 cohesion(vector<Boid> flock);
 
-	/* Steers boids towards the master position
+	/* Steers boids away from this predator
 	*/
-	glm::vec3 follow(vector<Boid> flock, glm::vec3 master);
+	glm::vec3 falcon(vector<Boid> flock, glm::vec3 master);
 
 	/* Implements the three rules, align, separation and cohesion
 	*/
@@ -98,4 +102,5 @@ public:
 	/* Normailse a vector
 	*/
 	glm::vec3 normVector(glm::vec3 vec);
+
 };

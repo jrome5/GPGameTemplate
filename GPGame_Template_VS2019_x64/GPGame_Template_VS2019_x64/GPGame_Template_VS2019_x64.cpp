@@ -75,8 +75,9 @@ constexpr float BOID_SIZE = 0.025f;
 float al = 1.0f;
 float sep = 1.0f;
 float coh = 1.0f;
-float fol = 1.0f;
+float fal = 0.0f;
 constexpr glm::vec3 CAGE_POSITION(3.0f, CONTAINER_SIZE.y / 2, 3.0f);
+constexpr float predator_size = 5.0f * BOID_SIZE;
 
 
 //PARTICLE DEMO
@@ -536,31 +537,25 @@ void updateBoidsDemo()
 	if (keyStatus[GLFW_KEY_K]) sep -= 0.1f;
 	if (keyStatus[GLFW_KEY_O]) coh += 0.1f;
 	if (keyStatus[GLFW_KEY_L]) coh -= 0.1f;
+	if (keyStatus[GLFW_KEY_P]) {
+		fal += 2.0f;
+		boid_visuals[0].fillColor = glm::vec4(0.0f, 0.1f, 0.0f, 1.0f);
+	}
 
 	const float dt = std::min(deltaTime, 1.0f);
 	for (int i = 0; i < number_of_boids; i++)
 	{
 		auto& boid = boids[i];
 		auto& visual = boid_visuals[i];
-		//boid.behaviour(boids, boids[0].position, al, sep, coh, fol);
-		boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fol);
+		boid.behaviour(boids, boids[0].position, al, sep, coh, fal);
+		//boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fal);
 		boid.cage();
 		boid.update(dt);
 
-		if (i == 0) {
-
-			glm::mat4 mv_matrix_sphere =
-				glm::translate(boid.position) *
-				glm::scale(glm::vec3(BOID_SIZE, BOID_SIZE, BOID_SIZE)) *
-				glm::mat4(1.0f);
-			visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
-			visual.proj_matrix = myGraphics.proj_matrix;
-
-		}
-
+		const float size = (i == 0) ? predator_size : BOID_SIZE;
 		glm::mat4 mv_matrix_sphere =
 			glm::translate(boid.position) *
-			glm::scale(glm::vec3(BOID_SIZE, BOID_SIZE, BOID_SIZE)) *
+			glm::scale(glm::vec3(size, size, size)) *
 			glm::mat4(1.0f);
 		visual.mv_matrix = myGraphics.viewMatrix * mv_matrix_sphere;
 		visual.proj_matrix = myGraphics.proj_matrix;
