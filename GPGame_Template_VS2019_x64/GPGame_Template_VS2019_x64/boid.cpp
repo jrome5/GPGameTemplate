@@ -233,34 +233,6 @@ glm::vec3 Boid::normVector(glm::vec3 vec) {
 	return temp;
 }
 
-glm::vec3 Boid::limitVector(glm::vec3 vec, float limit) {
-
-	glm::vec3 limited = vec;
-
-	if (limited.x > limit) {
-		limited.x = limit;
-	}
-	else if (limited.x < 0) {
-		limited.x = -limit;
-	}
-
-	if (limited.y > limit) {
-		limited.y = limit;
-	}
-	else if (limited.y < 0) {
-		limited.y = -limit;
-	}
-
-	if (limited.z > limit) {
-		limited.z = limit;
-	}
-	else if (limited.z < 0) {
-		limited.z = -limit;
-	}
-
-	return limited;
-}
-
 void Boid::cage() {
 	if (position.x >= bounds.x) {
 		position.x = 0;

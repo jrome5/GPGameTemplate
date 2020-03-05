@@ -7,41 +7,6 @@
 #include "boid.h"
 #include "particle.h"
 
-constexpr int ROWS = 20;
-constexpr int COLS = 20;
-constexpr bool grid[ROWS][COLS] = { {0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-									{1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0},
-									{1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0},
-									{1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
-									{0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0},
-									{0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1},
-									{1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0},
-									{1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0},
-									{0, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-									{1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
-									{0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0},
-									{0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1},
-									{0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0},
-									{0, 0, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0},
-									{1, 1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1},
-									{0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0},
-									{0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0},
-									{0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0},
-									{0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0},
-									{0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0},
-								}; //create blocks on 1s, empty space on zeros
-
-constexpr int MAZE_SIZE = ROWS * COLS;
-//demo location, activation point
-constexpr std::pair<int, int> PARTICLE_DEMO = std::make_pair(57, 157); 
-constexpr std::pair<int, int> PHYSICS_DEMO = std::make_pair(342, 242);
-constexpr std::pair<int, int> BOIDS_DEMO = std::make_pair(357, 237);
-
-int target = -1;
-int start = -1;
-int activation_point = -1;
-bool activate_demo = false;
-
 AABB camera_aabb;
 typedef struct wall
 {
@@ -112,12 +77,7 @@ int main()
 
 	}
 
-
 	myGraphics.endProgram();            // Close and clean everything up...
-
-   // cout << "\nPress any key to continue...\n";
-   // cin.ignore(); cin.get(); // delay closing console to read debugging errors.
-
 	return 0;
 }
 
@@ -277,16 +237,6 @@ void createMaze()
 			graph.addEdge(frm, frm + 1, 1);
 		}
 	}
-	//for (auto p : graph.getVertices())
-	//{
-	//	Vertex v = p.second;
-	//	cout << std::endl << v.getID() << ": ";
-	//	for (auto adjacent : v.getConnections())
-	//	{
-	//		auto a = adjacent.first;
-	//		cout << a << ", ";
-	//	}
-	//}
 		
 	//Outer walls
 	for (int i = 0; i < ROWS + 1; i++)
@@ -465,7 +415,6 @@ void updateSceneElements() {
 	
 	if ((cell_pos != prev_cell_pos) or new_path)
 	{
-		//cout << "New path";
 		if (target != -1)
 		{
 			path.clear();
@@ -530,7 +479,6 @@ void updateSceneElements() {
 
 void updateBoidsDemo() 
 {
-	//std::cout << "Me and the boids having a demo" << std::endl;
 	if (keyStatus[GLFW_KEY_U]) al += 0.1f;
 	if (keyStatus[GLFW_KEY_J]) al -= 0.1f;
 	if (keyStatus[GLFW_KEY_I]) sep += 0.1f;
@@ -543,12 +491,12 @@ void updateBoidsDemo()
 	}
 
 	const float dt = std::min(deltaTime, 1.0f);
+
 	for (int i = 0; i < number_of_boids; i++)
 	{
 		auto& boid = boids[i];
 		auto& visual = boid_visuals[i];
 		boid.behaviour(boids, boids[0].position, al, sep, coh, fal);
-		//boid.behaviour(boids, myGraphics.cameraPosition, al, sep, coh, fal);
 		boid.cage();
 		boid.update(dt);
 
@@ -628,9 +576,8 @@ void updatePhysicsDemo()
 
 void updateParticleDemo() 
 {
-	const auto dt = std::min(deltaTime, 0.2f);  //TODO: remove this workaround
-	//std::cout << "Partly working" << std::endl;
-	const float magnitude = 5.0f;
+	const auto dt = std::min(deltaTime, 0.2f);
+
 	if (red_firework.checkExpired(dt))
 	{
 		for (auto& particle : red_firework.particles)
@@ -716,8 +663,6 @@ void renderScene() {
 
 // CallBack functions low level functionality.
 void onResizeCallback(GLFWwindow* window, int w, int h) {    // call everytime the window is resized
-	//myGraphics.windowWidth = w;
-	//myGraphics.windowHeight = h;
 
 	glfwGetFramebufferSize(window, &myGraphics.windowWidth, &myGraphics.windowHeight);
 

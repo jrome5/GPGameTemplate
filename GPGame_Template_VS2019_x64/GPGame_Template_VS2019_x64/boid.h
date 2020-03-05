@@ -28,8 +28,7 @@ public:
 	float visionRadius;
 	float maxForce;
 
-	float     maxSpeed;
-	
+	float maxSpeed;
 
 	AABB bounding_box;
 	AABB neighbourhood;
@@ -70,21 +69,17 @@ public:
 	*/
 	void cage();
 
-
 	/* Calculates the distance between two vectors
 	*/
 	float distance(glm::vec3 otherBoid, glm::vec3 thisBoid);
-
 
 	/* Adds two vectors element wise
 	*/
 	glm::vec3 addVector(glm::vec3 vec1, glm::vec3 vec2);
 
-
 	/* Subtracts two vectors element wise
 	*/
 	glm::vec3 subVector(glm::vec3 vec1, glm::vec3 vec2);
-
 
 	/* Divides a vector by a constant
 	*/
@@ -93,11 +88,6 @@ public:
 	/* Multiplies a vector by a constant
 	*/
 	glm::vec3 mulVector(glm::vec3 vec, float con);
-
-	/* Keeps each element in the vector from exceeding the limit.
-	*  If an element exceeds the limit, it will be set to the limit.
-	*/
-	glm::vec3 limitVector(glm::vec3 vec, float limit);
 
 	/* Normailse a vector
 	*/
